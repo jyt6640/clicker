@@ -1,0 +1,208 @@
+/* 제작자 통계 — 다섯 게임을 한 화면에서 봅니다. */
+
+html, body { overflow: auto; }
+body { -webkit-user-select: text; user-select: text; }
+
+.gate {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2rem;
+}
+.gate h1 { font-size: 1.1rem; letter-spacing: 0.24em; font-weight: 700; }
+.gate form { display: flex; gap: 0.5rem; }
+.gate input {
+  width: 200px;
+  padding: 0.7rem 0.9rem;
+  background: #0c0c0c;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.gate input:focus { outline: none; border-color: #555; }
+.gate button {
+  padding: 0.7rem 1.2rem;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.gate button:hover { color: #fff; border-color: #444; }
+.gate-error { color: var(--accent); font-size: 0.8rem; }
+
+.panel { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.top h1 { flex: 1; font-size: 1.1rem; letter-spacing: 0.2em; }
+
+.ghost {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--dim);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ghost:hover { color: #fff; border-color: #444; }
+
+.loading { color: var(--dim); letter-spacing: 0.2em; padding: 2rem 0; }
+
+/* 게임 설정 편집 */
+.settings {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.75rem;
+  background: #090909;
+}
+.settings h2 { font-size: 0.95rem; letter-spacing: 0.14em; margin-bottom: 0.5rem; }
+.hint { color: #555; font-size: 0.72rem; line-height: 1.8; margin-bottom: 1rem; }
+.uid-hint { margin: 1rem 0 0; }
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.65rem;
+}
+.fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--dim);
+}
+.fields input {
+  padding: 0.55rem 0.7rem;
+  background: #050505;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+}
+.fields input:focus { outline: none; border-color: #555; }
+
+.actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
+.save-msg { font-size: 0.75rem; color: var(--dim); }
+.save-msg.ok { color: #5ac47d; }
+.save-msg.err { color: var(--accent); }
+
+.game {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  background: #090909;
+}
+.game > h2 {
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  margin-bottom: 0.35rem;
+}
+.game > h2 .badge {
+  margin-left: 0.6rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  vertical-align: middle;
+}
+.game > h2 .badge.done { color: var(--accent); border-color: #4a1a14; }
+.game > .url {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: #4a4a4a;
+  margin-bottom: 1rem;
+  text-decoration: none;
+}
+.game > .url:hover { color: #888; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1.1rem;
+}
+.cell {
+  background: #050505;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+.cell span { display: block; color: var(--dim); font-size: 0.7rem; margin-bottom: 0.35rem; }
+.cell b { font-size: 0.95rem; font-weight: 700; }
+
+.block {
+  background: #050505;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+.block h3 {
+  font-size: 0.75rem;
+  color: var(--dim);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.milestones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: #bbb;
+}
+.milestones span { color: var(--dim); display: inline-block; width: 3.2em; }
+
+.table-wrap { max-height: 260px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+th {
+  position: sticky;
+  top: 0;
+  background: #050505;
+  text-align: left;
+  color: var(--dim);
+  font-weight: 400;
+  padding: 0.35rem 0.5rem;
+  white-space: nowrap;
+}
+td {
+  padding: 0.35rem 0.5rem;
+  border-top: 1px solid #121212;
+  color: #bbb;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+}
+td.num, th.num { text-align: right; color: #fff; }
+tbody tr:hover td { background: #0f0f0f; }
+
+.note {
+  color: #555;
+  font-size: 0.72rem;
+  line-height: 1.9;
+  text-align: center;
+  margin-top: 2rem;
+}

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<meta name="robots" content="noindex">
+<title>제작자 통계</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/base.css?v=4">
+<link rel="stylesheet" href="./stats.css?v=4">
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h1>제작자 통계</h1>
+  <form id="gate-form">
+    <input id="gate-pw" type="password" placeholder="비밀번호" autocomplete="off" aria-label="비밀번호">
+    <button type="submit">열기</button>
+  </form>
+  <p id="gate-error" class="gate-error" hidden>비밀번호가 일치하지 않습니다.</p>
+</div>
+
+<div id="panel" class="panel" hidden>
+  <header class="top">
+    <h1>제작자 통계</h1>
+    <button id="refresh" type="button" class="ghost">새로고침</button>
+  </header>
+
+  <section class="settings">
+    <h2>게임 설정</h2>
+    <p class="hint">
+      여기서 바꾸면 배포 없이 즉시 반영됩니다. 이미 진행 중인 게임의 목표치를
+      낮추면 그 순간 종료될 수 있으니 주의하세요.
+    </p>
+
+    <div class="fields">
+      <label>원통 클릭 목표<input id="set-cylinder-target" type="number" min="1"></label>
+      <label>얼음 마찰 목표<input id="set-melt-target" type="number" min="1"></label>
+      <label>줄다리기 승리 격차<input id="set-tug-winBy" type="number" min="1"></label>
+      <label>자물쇠 정답<input id="set-lock-answer" type="text" inputmode="numeric" placeholder="변경할 때만 입력"></label>
+      <label>자물쇠 힌트 간격<input id="set-lock-hintEvery" type="number" min="1"></label>
+      <label>자물쇠 쿨다운(ms)<input id="set-lock-cooldownMs" type="number" min="0"></label>
+      <label>버튼 제한 시간(초)<input id="set-button-resetSeconds" type="number" min="1"></label>
+      <label>버튼 숫자 감춤(초)<input id="set-button-hideUnderSeconds" type="number" min="0"></label>
+      <label>버튼 1인 시도 제한<input id="set-button-maxPresses" type="number" min="1"></label>
+    </div>
+
+    <div class="actions">
+      <button id="save" type="button" class="ghost">설정 저장</button>
+      <span id="save-msg" class="save-msg"></span>
+    </div>
+
+    <p class="hint uid-hint">
+      이 브라우저의 관리자 ID: <code id="my-uid">…</code><br>
+      설정을 저장하려면 이 값이 <code>firestore.rules</code>의
+      <code>ADMIN_UID</code> 자리에 들어가 있어야 합니다. 그래야 참여자가
+      설정을 바꿀 수 없습니다.
+    </p>
+  </section>
+
+  <p id="loading" class="loading pulse">데이터 집계 중</p>
+
+  <div id="games"></div>
+
+  <p class="note">
+    수치의 정본은 이 화면(Firestore)입니다. 구글 애널리틱스는 광고 차단기
+    사용자가 빠지므로 유입 경로 참고용으로만 보세요.
+    <br>
+    데이터 보호를 위해 초기화 기능은 제공하지 않습니다. 정적 페이지라 앱 안에
+    초기화를 두면 참여자도 실행할 수 있기 때문입니다. 초기화가 필요하면
+    Firebase 콘솔에서 <code>games/{게임}</code> 문서와 하위
+    <code>shards</code>, <code>users</code> 컬렉션을 직접 삭제하세요.
+  </p>
+</div>
+
+<script type="module" src="./stats.js?v=4"></script>
+</body>
+</html>

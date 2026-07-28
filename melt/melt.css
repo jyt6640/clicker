@@ -1,0 +1,80 @@
+/* 게임 2 — 얼음 녹이기. 문지른 거리가 마찰량으로 쌓입니다. */
+
+body {
+  background:
+    radial-gradient(circle at 50% 30%, #14313d 0%, #050505 62%);
+}
+
+.ice {
+  position: relative;
+  width: clamp(190px, 58vw, 270px);
+  height: clamp(190px, 58vw, 270px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  overflow: hidden;
+
+  /* 아래 네 값은 진행률에 따라 JS가 갱신합니다. */
+  --melt: 0;
+  --ice-alpha: 0.55;
+  --ice-radius: 22px;
+
+  background: rgba(186, 230, 253, var(--ice-alpha));
+  border: 2px solid rgba(255, 255, 255, calc(0.65 * (1 - var(--melt))));
+  border-radius: var(--ice-radius);
+  backdrop-filter: blur(calc(9px * (1 - var(--melt)) + 1px));
+  box-shadow:
+    0 0 50px rgba(186, 230, 253, calc(0.38 * (1 - var(--melt)))),
+    inset 0 0 30px rgba(255, 255, 255, calc(0.6 * (1 - var(--melt))));
+  transition:
+    background 0.35s ease, border-radius 0.5s ease, border-color 0.35s ease,
+    box-shadow 0.35s ease, backdrop-filter 0.35s ease;
+}
+.ice:active { cursor: grabbing; }
+.ice:focus-visible { border-color: var(--accent); }
+
+/* 표면 결정 무늬 — 녹을수록 흐려짐 */
+.ice-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(1 - var(--melt));
+  transition: opacity 0.35s ease;
+  background:
+    linear-gradient(48deg, transparent 38%, rgba(255,255,255,0.34) 44%, transparent 50%),
+    linear-gradient(-24deg, transparent 60%, rgba(255,255,255,0.22) 66%, transparent 72%);
+}
+
+/* 얼음 속 오브젝트 — 녹을수록 또렷해짐 */
+.ice-core {
+  font-size: clamp(3.2rem, 13vw, 5rem);
+  filter: blur(calc(14px * (1 - var(--melt)))) opacity(calc(0.25 + 0.75 * var(--melt)));
+  transition: filter 0.35s ease;
+  pointer-events: none;
+}
+
+/* 문지르는 동안 미세한 떨림 */
+.ice.rubbing { animation: jitter 0.12s infinite; }
+@keyframes jitter {
+  0%   { transform: translate(0.6px, 0.4px) rotate(0.25deg); }
+  50%  { transform: translate(-0.6px, -0.5px) rotate(-0.3deg); }
+  100% { transform: translate(0.5px, -0.4px) rotate(0.2deg); }
+}
+
+/* 물방울 */
+.drop {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 0.6s ease-in, opacity 0.6s ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ice.rubbing { animation: none; }
+  .drop { display: none; }
+}

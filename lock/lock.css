@@ -1,0 +1,117 @@
+/* 게임 3 — 자물쇠. 3자리 다이얼을 굴려 맞춥니다. */
+
+body { background: radial-gradient(circle at 50% 35%, #1a1614 0%, #050505 65%); }
+
+.stage { gap: 1.25rem; }
+
+/* 걸쇠 */
+.shackle {
+  width: clamp(96px, 26vw, 130px);
+  height: clamp(52px, 14vw, 70px);
+  border: 12px solid #6d6d6d;
+  border-bottom: none;
+  border-radius: 999px 999px 0 0;
+  margin-bottom: -6px;
+  transition: transform 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+  box-shadow: inset 0 3px 6px rgba(255,255,255,0.22);
+}
+.shackle.open { transform: translateY(-34px) rotate(-16deg); }
+
+/* 다이얼 묶음 */
+.dials {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(180deg, #2c2c2c, #171717);
+  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.dial {
+  position: relative;
+  width: clamp(52px, 15vw, 68px);
+  height: clamp(76px, 21vw, 96px);
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0c0c0c;
+  box-shadow:
+    inset 0 14px 16px -10px rgba(0,0,0,0.95),
+    inset 0 -14px 16px -10px rgba(0,0,0,0.95);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+}
+.dial:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.dial:active { cursor: grabbing; }
+
+/* 세로로 늘어선 0~9 스트립. transform으로 굴립니다. */
+.strip {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  transition: transform 0.28s cubic-bezier(0.22, 0.9, 0.28, 1);
+  will-change: transform;
+}
+/* 한 칸의 높이를 다이얼 높이와 같게 맞춰 항상 숫자 하나만 보이게 한다.
+   실제 값은 JS가 --item-h로 넣어줍니다. */
+.strip span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--item-h, 88px);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(1.6rem, 5.5vw, 2.1rem);
+  color: #e8e8e8;
+}
+
+/* 위아래 그림자로 원통처럼 보이게 */
+.dial::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 34%,
+    rgba(0,0,0,0) 66%, rgba(0,0,0,0.85) 100%);
+}
+
+/* 열기 버튼 */
+.try {
+  margin-top: 0.5rem;
+  padding: 0.9rem 2.5rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.25em;
+  color: #ddd;
+  background: none;
+  border: 1px solid #3a3a3a;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+.try:hover:not(:disabled) { color: #fff; border-color: #fff; }
+.try:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.stage.wrong .dials { animation: nope 0.36s ease; }
+@keyframes nope {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-9px); }
+  75% { transform: translateX(9px); }
+}
+
+.hint {
+  font-size: 0.95rem;
+  letter-spacing: 0.7em;
+  color: var(--dim);
+}
+.hint b { color: var(--accent); font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  .strip { transition: none; }
+  .shackle { transition: none; }
+  .stage.wrong .dials { animation: none; }
+}

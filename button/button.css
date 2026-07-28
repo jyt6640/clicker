@@ -1,0 +1,74 @@
+/* 게임 5 — 더 버튼. 남은 시간이 줄수록 화면이 달아오릅니다. */
+
+body {
+  background: #050505;
+  transition: background 0.8s ease;
+}
+body.warm { background: radial-gradient(circle at 50% 50%, #2a1005 0%, #050505 70%); }
+body.hot  { background: radial-gradient(circle at 50% 50%, #4a1206 0%, #080202 70%); }
+
+.count { transition: color 0.5s ease, text-shadow 0.5s ease; }
+.count.warm { color: #ffb648; text-shadow: 0 0 50px rgba(255, 182, 72, 0.45); }
+.count.hot  { color: var(--accent); text-shadow: 0 0 70px rgba(255, 69, 48, 0.6); }
+
+/* 마지막 구간 — 숫자가 사라지고 자리만 남습니다. */
+.count.blind::after { content: "·"; opacity: 0.25; }
+.count.blind { min-height: 1em; }
+
+/* 숫자가 사라진 동안에는 버튼이 더 거칠게 뜁니다. */
+.big-button.blind { animation: throb 0.35s ease-in-out infinite; }
+
+/* 남은 시도 횟수 표시 */
+.sub { letter-spacing: 0.5em; font-size: 1rem; color: #7a3b33; }
+
+.big-button {
+  position: relative;
+  width: clamp(160px, 46vw, 220px);
+  height: clamp(160px, 46vw, 220px);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: radial-gradient(circle at 38% 32%, #ff6b52 0%, #d8361f 48%, #8f1d0d 100%);
+  box-shadow:
+    0 18px 0 #5c1208,
+    0 26px 40px rgba(0, 0, 0, 0.75),
+    inset 0 8px 22px rgba(255, 255, 255, 0.3);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.big-button:active {
+  transform: translateY(12px);
+  box-shadow:
+    0 6px 0 #5c1208,
+    0 10px 18px rgba(0, 0, 0, 0.7),
+    inset 0 8px 22px rgba(255, 255, 255, 0.22);
+}
+.big-button:focus-visible { outline: 2px solid #fff; outline-offset: 6px; }
+
+/* 남은 시간이 얼마 없을 때 버튼이 맥동합니다. */
+.big-button.urgent { animation: throb 0.7s ease-in-out infinite; }
+@keyframes throb {
+  0%, 100% { box-shadow: 0 18px 0 #5c1208, 0 26px 40px rgba(0,0,0,0.75), inset 0 8px 22px rgba(255,255,255,0.3), 0 0 0 0 rgba(255, 69, 48, 0.55); }
+  70%      { box-shadow: 0 18px 0 #5c1208, 0 26px 40px rgba(0,0,0,0.75), inset 0 8px 22px rgba(255,255,255,0.3), 0 0 0 34px rgba(255, 69, 48, 0); }
+}
+
+/* 누군가 눌러서 타이머가 되돌아갈 때 퍼지는 파동 */
+.ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  opacity: 0;
+  pointer-events: none;
+}
+.ring.go { animation: spread 0.6s ease-out; }
+@keyframes spread {
+  from { transform: scale(1); opacity: 0.8; }
+  to   { transform: scale(1.7); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .big-button.urgent { animation: none; }
+  .ring.go { animation: none; }
+  body, .count { transition: none; }
+}

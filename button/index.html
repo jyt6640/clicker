@@ -10,29 +10,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<!-- 애셋 뒤의 ?v= 는 캐시 무효화용입니다. 배포할 때마다 전체를 함께 올려주세요. -->
-<link rel="stylesheet" href="./shared/base.css?v=4">
-<link rel="stylesheet" href="./style.css?v=4">
+<link rel="stylesheet" href="../shared/base.css?v=4">
+<link rel="stylesheet" href="./button.css?v=4">
 </head>
 <body>
 
 <div id="status" class="status pulse">연결 중</div>
 
 <main id="stage" class="stage" hidden>
-  <div id="count" class="count tabular">0</div>
+  <div id="count" class="count tabular mono">60.0</div>
 
-  <div id="cylinder" class="cylinder" role="button" tabindex="0" aria-label="클릭하기">
-    <span class="cyl-top"></span>
-    <span class="cyl-body">
-      <span class="crack crack-1"></span>
-      <span class="crack crack-2"></span>
-      <span class="crack crack-3"></span>
-      <span class="crack crack-4"></span>
-    </span>
-    <span class="cyl-bottom"></span>
-  </div>
+  <button id="btn" class="big-button" type="button" aria-label="누르기">
+    <span class="ring"></span>
+  </button>
 
-  <div id="sub" class="sub tabular">0 / 20,000</div>
+  <div id="sub" class="sub tabular">0</div>
 </main>
 
 <section id="done" class="done" hidden>
@@ -44,9 +36,9 @@
 
 <section id="setup" class="setup" hidden>
   <h2>설정이 필요합니다</h2>
-  <p><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.<br>자세한 절차는 저장소의 <code>README.md</code>에 있습니다.</p>
+  <p><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.</p>
 </section>
 
-<script type="module" src="./app.js?v=4"></script>
+<script type="module" src="./button.js?v=4"></script>
 </body>
 </html>
