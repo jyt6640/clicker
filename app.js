@@ -10,7 +10,7 @@ import {
 import {
   GOOGLE_FORM_URL, TARGET_CLICKS, ADMIN_PASSWORD, GA_MEASUREMENT_ID,
   firebaseConfig, SHARD_COUNT, FLUSH_INTERVAL_MS
-} from "./config.js";
+} from "./config.js?v=2";
 
 /* ------------------------------------------------------------------ */
 /* DOM                                                                 */
