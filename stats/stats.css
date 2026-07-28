@@ -1,7 +1,20 @@
 /* 제작자 통계 — 다섯 게임을 한 화면에서 봅니다. */
 
-html, body { overflow: auto; }
-body { -webkit-user-select: text; user-select: text; }
+/* base.css는 게임 화면용으로 html·body를 뷰포트 높이에 고정하고 스크롤을
+   막습니다. 통계는 세로로 긴 문서라 그 제약을 풀어야 합니다. overflow만
+   바꾸고 height: 100%를 남겨두면 문서가 뷰포트보다 커지지 못해 스크롤이
+   아예 죽습니다. */
+html, body {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+body {
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: auto;
+}
 
 .gate {
   min-height: 100dvh;
