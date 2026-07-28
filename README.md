@@ -36,11 +36,19 @@ GitHub Pages(정적 호스팅) + Firebase Firestore(실시간 공유 데이터) 
    위치는 `asia-northeast3 (서울)` → 모드는 아무거나 선택
    (다음 단계에서 규칙을 덮어씁니다).
 
-6. **보안 규칙 게시**
-   Firestore Database → *규칙* 탭 → 이 저장소의
-   [`firestore.rules`](./firestore.rules) 내용을 통째로 붙여넣고 *게시*.
+6. **보안 규칙 게시** — 둘 중 하나
+   - 콘솔: Firestore Database → *규칙* 탭 → 이 저장소의
+     [`firestore.rules`](./firestore.rules) 내용을 통째로 붙여넣고 *게시*.
+   - CLI: `npm i -g firebase-tools && firebase login` 후 저장소에서
+     `firebase deploy --only firestore:rules`.
+     저장소에 `firebase.json`과 `.firebaserc`가 들어 있어 `firebase init`은
+     따로 하지 않아도 됩니다.
 
 7. 커밋 후 푸시하면 1~2분 안에 GitHub Pages에 반영됩니다.
+
+> **Firebase Hosting은 쓰지 않습니다.** 페이지는 GitHub Pages가 서빙합니다.
+> `firebase deploy`를 옵션 없이 실행하면 호스팅까지 배포되어 링크가 두 개로
+> 갈라지니, 반드시 `--only firestore:rules`를 붙이세요.
 
 > **`apiKey`를 공개 저장소에 올려도 되나요?**
 > 네. Firebase 웹 `apiKey`는 비밀키가 아니라 프로젝트 식별자입니다.

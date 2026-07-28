@@ -23,19 +23,20 @@ export const ADMIN_PASSWORD = "wootecho";
 //       milestone(25/50/75/100), event_complete, survey_click.
 //    ※ 광고 차단기를 쓰는 사용자는 GA에 잡히지 않습니다.
 //       정확한 참여 수치는 제작자 통계 화면(Firestore)이 정본입니다.
-export const GA_MEASUREMENT_ID = "";
+export const GA_MEASUREMENT_ID = "G-GS7JQCYXCX";
 
 // 5) Firebase 웹 앱 설정.
 //    Firebase 콘솔 > 프로젝트 설정 > 내 앱 > SDK 설정 및 구성 에서
 //    복사한 값을 그대로 붙여넣으세요. 채우기 전에는 앱이
 //    "설정이 필요합니다" 화면을 표시합니다.
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyAEXF185njXPlQGn-MeMjkVpQezcdOUJwA",
+  authDomain: "clicker-2f0d7.firebaseapp.com",
+  projectId: "clicker-2f0d7",
+  storageBucket: "clicker-2f0d7.firebasestorage.app",
+  messagingSenderId: "397733817124",
+  appId: "1:397733817124:web:497ee6512732cb8b1b21b1",
+  measurementId: "G-GS7JQCYXCX",
 };
 
 // ==========================================================================
