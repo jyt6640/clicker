@@ -1,7 +1,7 @@
 // 다섯 게임이 공유하는 화면 조각: 연결 상태 표시와 결과 화면.
 
-import { GOOGLE_FORM_URL } from "../config.js?v=5";
-import { track } from "./core.js?v=5";
+import { GOOGLE_FORM_URL } from "../config.js?v=6";
+import { track } from "./core.js?v=6";
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,9 +21,11 @@ export function statusHandler(onFirstConnect) {
       el.classList.add("hide");
       // 무대는 hidden 속성으로 시작합니다. 연결된 뒤에야 드러납니다.
       stage.hidden = false;
-      // hidden을 막 떼어낸 프레임에서 곧바로 in을 붙이면 전환이 생략되므로
-      // 다음 프레임으로 미룹니다.
-      requestAnimationFrame(() => stage.classList.add("in"));
+      // hidden을 떼어낸 직후에 곧바로 in을 붙이면 전환이 생략되므로 리플로우를
+      // 한 번 강제합니다. requestAnimationFrame은 쓰지 않습니다 — 백그라운드
+      // 탭에서 열면 콜백이 실행되지 않아 무대가 투명한 채로 남습니다.
+      void stage.offsetWidth;
+      stage.classList.add("in");
       if (!connectedOnce) {
         connectedOnce = true;
         if (onFirstConnect) onFirstConnect();
@@ -71,7 +73,8 @@ export function showDone({ title, msg = "", gameId }) {
   }
 
   done.hidden = false;
-  requestAnimationFrame(() => done.classList.add("in"));
+  void done.offsetWidth;
+  done.classList.add("in");
 }
 
 export function showSetupNeeded() {
