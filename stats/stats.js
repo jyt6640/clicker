@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 보안 규칙이 합니다. 관리자 계정이 아니면 로그인 자체가
 // 되지 않고, 설정·정답 문서에는 쓰기도 막혀 있습니다.
 
-import { GAMES } from "../config.js?v=6";
+import { GAMES } from "../config.js?v=7";
 import {
   loadStats, configured, fmt, gameSettings, settingsRef, signInAdminEmail,
   answerId, adminDoc
-} from "../shared/core.js?v=6";
+} from "../shared/core.js?v=7";
 import { setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const $ = (id) => document.getElementById(id);

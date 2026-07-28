@@ -6,8 +6,8 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "../shared/core.js?v=6";
-import { statusHandler, showDone, showSetupNeeded } from "../shared/ui.js?v=6";
+} from "../shared/core.js?v=7";
+import { statusHandler, showDone, showSetupNeeded } from "../shared/ui.js?v=7";
 
 const GAME_ID = "button";
 let resetSeconds = 15;
