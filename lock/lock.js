@@ -4,9 +4,9 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
-  checkAnswer, getHint
-} from "../shared/core.js?v=7";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=7";
+  checkAnswer, getHint, roundDocId, currentRound
+} from "../shared/core.js?v=8";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=8";
 
 const GAME_ID = "lock";
 // 관리자 설정을 읽어 덮어씁니다.
@@ -150,7 +150,7 @@ async function updateHint(attempts, session) {
   await session.patchGame({ hintLevel: unlocked });
 
   for (let i = known.length; i < unlocked; i++) {
-    const d = await getHint(i + 1);
+    const d = await getHint(roundId, i + 1);
     if (d === null) break;
     known.push(d);
   }
@@ -172,6 +172,8 @@ async function main() {
   answerSalt = cfg.answerSalt;
   hintEvery = cfg.hintEvery;
   cooldownMs = cfg.cooldownMs;
+
+  const roundId = roundDocId(GAME_ID, await currentRound(GAME_ID));
 
   elHint.textContent = new Array(digits).fill("?").join(" ");
   buildDials();
@@ -213,7 +215,7 @@ async function main() {
       }
     }, 100);
 
-    if (await checkAnswer(answerSalt, guess)) {
+    if (await checkAnswer(answerSalt, guess, roundId)) {
       clearInterval(tick);
       await session.patchUser({ solved: true, solvedAt: Date.now() });
       elShackle.classList.add("open");

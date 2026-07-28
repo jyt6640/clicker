@@ -4,9 +4,9 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
-  getPayload
-} from "../shared/core.js?v=7";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=7";
+  getPayload, roundDocId, currentRound
+} from "../shared/core.js?v=8";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=8";
 
 const GAME_ID = "melt";
 let target = 50000;               // 관리자 설정을 읽어 덮어씁니다.
@@ -61,6 +61,10 @@ async function main() {
   target = (await gameSettings())[GAME_ID].target;
   render(0);
 
+  // 이미 끝난 회차라면 onComplete가 createSession이 반환되기 전에 불립니다.
+  // 그래서 회차 id를 미리 구해 둡니다.
+  const roundId = roundDocId(GAME_ID, await currentRound(GAME_ID));
+
   const session = await createSession({
     gameId: GAME_ID,
     target,
@@ -75,7 +79,7 @@ async function main() {
       }
       // 승자 문구는 코드에 없습니다. 게임이 끝난 뒤에만 열리는 문서에서
       // 받아옵니다. 관리자가 아직 넣지 않았다면 문구 없이 넘어갑니다.
-      const text = await getPayload(GAME_ID);
+      const text = await getPayload(roundId);
       showDone({ title: "🧊", msg: text || "", gameId: GAME_ID });
     }
   });

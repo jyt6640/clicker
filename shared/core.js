@@ -19,7 +19,7 @@ import {
 
 import {
   firebaseConfig, GA_MEASUREMENT_ID, SHARD_COUNT, FLUSH_INTERVAL_MS, GAMES
-} from "../config.js?v=7";
+} from "../config.js?v=8";
 
 export const configured = Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
 
@@ -89,6 +89,27 @@ export const refs = (gameId) => ({
 export const settingsRef = () => doc(db(), "settings", "global");
 
 /* ------------------------------------------------------------------ */
+/* 라운드                                                              */
+/* ------------------------------------------------------------------ */
+// 게임을 초기화하는 대신 새 라운드를 시작합니다. 이전 라운드 문서는 그대로
+// 남아 회차별 기록을 비교할 수 있고, 삭제를 막아둔 규칙과도 충돌하지 않습니다.
+//   games/cylinder-r1, games/cylinder-r2, ...
+
+export const roundDocId = (gameId, round) => `${gameId}-r${round}`;
+
+/** 문서 id를 다시 게임과 회차로 나눕니다. 형식이 아니면 null. */
+export function parseRoundId(docId) {
+  const m = /^(.+)-r(\d+)$/.exec(docId);
+  return m ? { gameId: m[1], round: Number(m[2]) } : null;
+}
+
+/** 지금 진행 중인 회차. 설정이 없으면 1회차입니다. */
+export async function currentRound(gameId) {
+  const merged = await gameSettings();
+  return merged[gameId]?.round || 1;
+}
+
+/* ------------------------------------------------------------------ */
 /* 비밀 값                                                             */
 /* ------------------------------------------------------------------ */
 // 자물쇠 정답은 어디에도 실려 오지 않습니다. 정답의 해시를 문서 id로 쓰고,
@@ -100,13 +121,18 @@ export async function sha256(text) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export const answerId = (salt, value) => sha256(`${salt}:answer:${value}`);
+// 회차를 해시에 섞으므로 새 라운드를 시작하면 지난 회차의 정답은 통하지
+// 않습니다.
+export const answerId = (salt, value, roundId) =>
+  sha256(`${salt}:answer:${roundId}:${value}`);
 
 /** 정답이면 true. 네트워크 응답에도 정답은 담기지 않습니다. */
-export async function checkAnswer(salt, guess) {
+export async function checkAnswer(salt, guess, roundId) {
   await signIn();
   try {
-    const snap = await getDoc(doc(db(), "lockAnswers", await answerId(salt, guess)));
+    const snap = await getDoc(
+      doc(db(), "lockAnswers", await answerId(salt, guess, roundId))
+    );
     return snap.exists();
   } catch (err) {
     console.error("[checkAnswer]", err);
@@ -114,10 +140,12 @@ export async function checkAnswer(salt, guess) {
   }
 }
 
+export const hintDocId = (roundId, index) => `${roundId}_${index}`;
+
 /** 공개된 단계까지만 읽힙니다. 그 이상은 규칙이 막습니다. */
-export async function getHint(index) {
+export async function getHint(roundId, index) {
   try {
-    const snap = await getDoc(doc(db(), "lockHints", String(index)));
+    const snap = await getDoc(doc(db(), "lockHints", hintDocId(roundId, index)));
     return snap.exists() ? snap.data().d : null;
   } catch (_) {
     return null;                       // 아직 잠긴 힌트
@@ -128,9 +156,9 @@ export async function getHint(index) {
 export const adminDoc = (col, id) => doc(db(), col, id);
 
 /** 게임이 끝난 뒤에만 읽히는 문구 */
-export async function getPayload(gameId) {
+export async function getPayload(roundId) {
   try {
-    const snap = await getDoc(doc(db(), "payloads", gameId));
+    const snap = await getDoc(doc(db(), "payloads", roundId));
     return snap.exists() ? snap.data().text : null;
   } catch (_) {
     return null;
@@ -143,6 +171,10 @@ export async function getPayload(gameId) {
  * 설정 문서를 읽지 못하면 조용히 기본값으로 동작합니다.
  */
 let _settingsPromise = null;
+
+/** 관리자가 설정을 바꾼 뒤 다시 읽어오게 합니다. */
+export function resetSettingsCache() { _settingsPromise = null; }
+
 export function gameSettings() {
   if (!_settingsPromise) {
     _settingsPromise = getDoc(settingsRef())
@@ -185,7 +217,9 @@ export async function createSession(opts) {
     onComplete = () => {}, onShards = () => {}
   } = opts;
 
-  const r = refs(gameId);
+  // 실제 데이터는 회차 문서 아래에 쌓입니다.
+  const roundId = roundDocId(gameId, await currentRound(gameId));
+  const r = refs(roundId);
 
   let uid = null;
   let authReady = false;
@@ -368,7 +402,9 @@ export async function createSession(opts) {
 
   return {
     uid,
-    /** 이 브라우저가 지금까지 이 게임에 참여한 횟수(새로고침해도 이어집니다) */
+    /** 이번 회차의 Firestore 문서 id (예: lock-r2) */
+    roundId,
+    /** 이 브라우저가 지금까지 이 회차에 참여한 횟수(새로고침해도 이어집니다) */
     get myCount() { return myCount; },
     get total() { return total; },
     get raw() { return raw; },
@@ -408,9 +444,10 @@ export async function createSession(opts) {
 /* ------------------------------------------------------------------ */
 /* 통계 집계 (통합 통계 페이지용)                                        */
 /* ------------------------------------------------------------------ */
-export async function loadStats(gameId, target) {
+/** 회차 하나의 집계. roundId는 games 컬렉션의 문서 id입니다. */
+export async function loadStats(roundId, target) {
   await signIn();
-  const r = refs(gameId);
+  const r = refs(roundId);
   const [gameSnap, shardSnap, userSnap] = await Promise.all([
     getDoc(r.game), getDocs(r.shards), getDocs(r.users)
   ]);
@@ -427,10 +464,24 @@ export async function loadStats(gameId, target) {
 
   const sum = actors.reduce((a, u) => a + (u.count || 0), 0);
   return {
-    gameId, event: ev, raw, shown, target,
+    roundId, event: ev, raw, shown, target,
     users, actors, sum,
     solvers: users.filter((u) => u.solved),
     top1: actors[0]?.count || 0,
     top5: actors.slice(0, 5).reduce((a, u) => a + (u.count || 0), 0)
   };
+}
+
+/** games 컬렉션에 존재하는 모든 회차 문서 id를 게임별로 묶어 돌려줍니다. */
+export async function listRounds() {
+  await signIn();
+  const snap = await getDocs(collection(db(), "games"));
+  const byGame = {};
+  snap.forEach((d) => {
+    const parsed = parseRoundId(d.id);
+    if (!parsed) return;
+    (byGame[parsed.gameId] ||= []).push(parsed.round);
+  });
+  for (const rounds of Object.values(byGame)) rounds.sort((a, b) => b - a);
+  return byGame;
 }

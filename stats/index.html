@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared/base.css?v=7">
-<link rel="stylesheet" href="./stats.css?v=7">
+<link rel="stylesheet" href="../shared/base.css?v=8">
+<link rel="stylesheet" href="./stats.css?v=8">
 </head>
 <body>
 
@@ -74,13 +74,12 @@
     수치의 정본은 이 화면(Firestore)입니다. 구글 애널리틱스는 광고 차단기
     사용자가 빠지므로 유입 경로 참고용으로만 보세요.
     <br>
-    데이터 보호를 위해 초기화 기능은 제공하지 않습니다. 정적 페이지라 앱 안에
-    초기화를 두면 참여자도 실행할 수 있기 때문입니다. 초기화가 필요하면
-    Firebase 콘솔에서 <code>games/{게임}</code> 문서와 하위
-    <code>shards</code>, <code>users</code> 컬렉션을 직접 삭제하세요.
+    데이터를 지우는 기능은 없습니다. 대신 게임마다 <b>새 라운드 시작</b>을 누르면
+    카운터가 0부터 다시 시작하고, 지난 회차 기록은 그대로 남아 여기서 계속
+    비교할 수 있습니다. 참여자는 새로고침하면 새 회차로 들어갑니다.
   </p>
 </div>
 
-<script type="module" src="./stats.js?v=7"></script>
+<script type="module" src="./stats.js?v=8"></script>
 </body>
 </html>

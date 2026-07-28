@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 보안 규칙이 합니다. 관리자 계정이 아니면 로그인 자체가
 // 되지 않고, 설정·정답 문서에는 쓰기도 막혀 있습니다.
 
-import { GAMES } from "../config.js?v=7";
+import { GAMES } from "../config.js?v=8";
 import {
   loadStats, configured, fmt, gameSettings, settingsRef, signInAdminEmail,
-  answerId, adminDoc
-} from "../shared/core.js?v=7";
+  answerId, adminDoc, listRounds, roundDocId, hintDocId, resetSettingsCache
+} from "../shared/core.js?v=8";
 import { setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const $ = (id) => document.getElementById(id);
@@ -36,16 +36,110 @@ function cell(label, value) {
   return `<div class="cell"><span>${label}</span><b>${value}</b></div>`;
 }
 
-function renderGame(id, s) {
+async function loadAll() {
+  const games = $("games");
+  $("loading").hidden = false;
+  games.innerHTML = "";
+
+  const merged = await gameSettings();
+  const byGame = await listRounds();
+  const ids = Object.keys(LAYOUT);
+
+  // 진행 중인 회차는 아직 문서가 없을 수 있으므로 목록에 채워 넣습니다.
+  for (const id of ids) {
+    const now = merged[id]?.round || 1;
+    byGame[id] = byGame[id] || [];
+    if (!byGame[id].includes(now)) byGame[id].unshift(now);
+    byGame[id].sort((a, b) => b - a);
+  }
+
+  const jobs = [];
+  for (const id of ids) {
+    for (const round of byGame[id]) {
+      jobs.push({ id, round });
+    }
+  }
+
+  const results = await Promise.allSettled(
+    jobs.map((j) => loadStats(roundDocId(j.id, j.round), LAYOUT[j.id].target))
+  );
+
+  const statsByGame = {};
+  jobs.forEach((j, i) => {
+    const res = results[i];
+    (statsByGame[j.id] ||= []).push({
+      round: j.round,
+      current: (merged[j.id]?.round || 1) === j.round,
+      ok: res.status === "fulfilled",
+      data: res.status === "fulfilled" ? res.value : null,
+      error: res.status === "rejected" ? res.reason : null
+    });
+    if (res.status === "rejected") console.error(`[stats:${j.id}-r${j.round}]`, res.reason);
+  });
+
+  games.innerHTML = ids.map((id) => renderGameBlock(id, statsByGame[id] || [])).join("");
+
+  document.querySelectorAll("[data-new-round]").forEach((btn) => {
+    btn.addEventListener("click", () => newRound(btn.dataset.newRound));
+  });
+
+  $("loading").hidden = true;
+}
+
+/** 한 게임의 전체 회차를 누적 집계와 함께 렌더합니다. */
+function renderGameBlock(id, rounds) {
   const meta = LAYOUT[id];
+  const good = rounds.filter((r) => r.ok).map((r) => r.data);
+
+  // 게임 전체 누적 — 참여자는 회차가 달라도 같은 익명 id를 씁니다.
+  const totalRaw = good.reduce((a, s) => a + s.raw, 0);
+  const everyone = new Set();
+  const actorsAll = new Set();
+  good.forEach((s) => {
+    s.users.forEach((u) => everyone.add(u.id));
+    s.actors.forEach((u) => actorsAll.add(u.id));
+  });
+
+  const summary = `
+    <div class="grid">
+      ${cell("진행한 회차", `${rounds.length}회`)}
+      ${cell(`누적 ${meta.unit}`, fmt(totalRaw))}
+      ${cell("누적 고유 접속자", fmt(everyone.size))}
+      ${cell("누적 참여자", fmt(actorsAll.size))}
+    </div>`;
+
+  const body = rounds.map((r) => {
+    if (!r.ok) {
+      return `<section class="round"><h3>${r.round}회차</h3>
+        <p class="note">데이터를 불러오지 못했습니다. 보안 규칙 배포를 확인하세요.</p>
+      </section>`;
+    }
+    return renderRound(id, r);
+  }).join("");
+
+  return `
+    <section class="game">
+      <header class="game-head">
+        <h2>${GAMES[id].title}</h2>
+        <a class="url" href="${meta.path}" target="_blank" rel="noopener">${meta.path}</a>
+        <button type="button" class="ghost" data-new-round="${id}">새 라운드 시작</button>
+      </header>
+      ${summary}
+      ${body}
+    </section>`;
+}
+
+function renderRound(id, r) {
+  const meta = LAYOUT[id];
+  const s = r.data;
   const ev = s.event || {};
   const done = ev.status === "completed";
   const total = meta.target ? s.shown : s.raw;
 
   const cells = [
-    cell("상태", done ? "완료됨" : "진행 중"),
+    cell("상태", done ? "완료됨" : (ev.startTime ? "진행 중" : "시작 전")),
     cell(`전체 ${meta.unit}`,
-      s.raw > s.shown && meta.target
+      meta.target && s.raw > s.shown
         ? `${fmt(s.shown)} <small style="color:#555">(원장 ${fmt(s.raw)})</small>`
         : fmt(total)),
     meta.target ? cell("달성률", `${(s.shown / meta.target * 100).toFixed(2)}%`) : "",
@@ -93,11 +187,11 @@ function renderGame(id, s) {
     : `<tr><td colspan="7">참여 데이터가 없습니다.</td></tr>`;
 
   return `
-    <section class="game">
-      <h2>${GAMES[id].title}
+    <section class="round">
+      <h3>${r.round}회차
+        ${r.current ? '<span class="badge live">현재</span>' : ""}
         <span class="badge ${done ? "done" : ""}">${done ? "완료" : "진행 중"}</span>
-      </h2>
-      <a class="url" href="${meta.path}" target="_blank" rel="noopener">${meta.path}</a>
+      </h3>
       <div class="grid">${cells.join("")}</div>
       ${milestoneBlock}
       <section class="block">
@@ -118,28 +212,26 @@ function renderGame(id, s) {
     </section>`;
 }
 
-async function loadAll() {
-  const games = $("games");
-  $("loading").hidden = false;
-  games.innerHTML = "";
+/** 지우지 않고 회차만 올립니다. 이전 회차 기록은 그대로 남습니다. */
+async function newRound(id) {
+  const now = (await gameSettings())[id]?.round || 1;
+  const next = now + 1;
+  if (!confirm(
+    `${GAMES[id].title}을(를) ${next}회차로 시작할까요?\n\n` +
+    `${now}회차 기록은 지워지지 않고 그대로 남습니다. ` +
+    `참여자는 새로고침하면 새 회차로 들어갑니다.` +
+    (id === "lock" ? "\n\n자물쇠는 새 회차 정답을 다시 설정해야 열립니다." : "")
+  )) return;
 
-  const ids = Object.keys(LAYOUT);
-  const results = await Promise.allSettled(
-    ids.map((id) => loadStats(id, LAYOUT[id].target))
-  );
-
-  games.innerHTML = results.map((res, i) => {
-    const id = ids[i];
-    if (res.status === "rejected") {
-      console.error(`[stats:${id}]`, res.reason);
-      return `<section class="game"><h2>${GAMES[id].title}</h2>
-        <p class="note">데이터를 불러오지 못했습니다. 보안 규칙이 배포되었는지 확인하세요.</p>
-      </section>`;
-    }
-    return renderGame(id, res.value);
-  }).join("");
-
-  $("loading").hidden = true;
+  const merged = await gameSettings();
+  try {
+    await setDoc(settingsRef(), { [id]: { ...merged[id], round: next } }, { merge: true });
+    resetSettingsCache();
+    loadAll();
+  } catch (err) {
+    console.error("[newRound]", err);
+    alert("회차를 올리지 못했습니다. 관리자 계정으로 로그인했는지 확인하세요.");
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -189,12 +281,13 @@ async function saveSettings() {
       return;
     }
     const salt = merged.lock.answerSalt;
+    const lockRound = roundDocId("lock", merged.lock.round || 1);
     secretWrites.push(
-      setDoc(adminDoc("lockAnswers", await answerId(salt, answer)), { ok: true })
+      setDoc(adminDoc("lockAnswers", await answerId(salt, answer, lockRound)), { ok: true })
     );
     for (let i = 0; i < answer.length; i++) {
       secretWrites.push(
-        setDoc(adminDoc("lockHints", String(i + 1)), { d: answer[i] })
+        setDoc(adminDoc("lockHints", hintDocId(lockRound, i + 1)), { d: answer[i] })
       );
     }
     payload.lock = payload.lock || { ...merged.lock };
@@ -206,12 +299,14 @@ async function saveSettings() {
   // 규칙이 읽기를 막습니다.
   const meltText = $("set-melt-payload").value.trim();
   if (meltText) {
-    secretWrites.push(setDoc(adminDoc("payloads", "melt"), { text: meltText }));
+    const meltRound = roundDocId("melt", merged.melt.round || 1);
+    secretWrites.push(setDoc(adminDoc("payloads", meltRound), { text: meltText }));
   }
 
   try {
     await Promise.all([setDoc(settingsRef(), payload, { merge: true }), ...secretWrites]);
     msg.className = "save-msg ok";
+    resetSettingsCache();
     msg.textContent = "저장했습니다. 참여자는 새로고침하면 반영됩니다.";
     $("set-lock-answer").value = "";
     $("set-melt-payload").value = "";

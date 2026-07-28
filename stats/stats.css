@@ -115,12 +115,33 @@ body { -webkit-user-select: text; user-select: text; }
   margin-bottom: 1.5rem;
   background: #090909;
 }
-.game > h2 {
-  font-size: 0.95rem;
-  letter-spacing: 0.14em;
-  margin-bottom: 0.35rem;
+.game-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
 }
-.game > h2 .badge {
+.game-head h2 { font-size: 0.95rem; letter-spacing: 0.14em; }
+.game-head .url { margin: 0; flex: 1; }
+
+/* 회차 하나 */
+.round {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: #060606;
+}
+.round > h3 {
+  font-size: 0.85rem;
+  color: #ccc;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.8rem;
+  border: none;
+  padding: 0;
+}
+.badge {
   margin-left: 0.6rem;
   font-size: 0.7rem;
   letter-spacing: 0.1em;
@@ -130,8 +151,9 @@ body { -webkit-user-select: text; user-select: text; }
   color: var(--dim);
   vertical-align: middle;
 }
-.game > h2 .badge.done { color: var(--accent); border-color: #4a1a14; }
-.game > .url {
+.badge.done { color: var(--accent); border-color: #4a1a14; }
+.badge.live { color: #5ac47d; border-color: #1e4a2c; }
+.url {
   display: block;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
@@ -139,7 +161,7 @@ body { -webkit-user-select: text; user-select: text; }
   margin-bottom: 1rem;
   text-decoration: none;
 }
-.game > .url:hover { color: #888; }
+.url:hover { color: #888; }
 
 .grid {
   display: grid;
