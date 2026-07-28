@@ -10,7 +10,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged
+  getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
   getFirestore, doc, collection, onSnapshot, getDoc, getDocs,
@@ -19,7 +19,7 @@ import {
 
 import {
   firebaseConfig, GA_MEASUREMENT_ID, SHARD_COUNT, FLUSH_INTERVAL_MS, GAMES
-} from "../config.js?v=4";
+} from "../config.js?v=5";
 
 export const configured = Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
 
@@ -47,22 +47,37 @@ export function track(name, params) {
 /* ------------------------------------------------------------------ */
 /* Firebase 싱글턴                                                      */
 /* ------------------------------------------------------------------ */
+let _app = null;
 let _db = null;
+let _auth = null;
 let _authPromise = null;
 
-function db() {
-  if (!_db) _db = getFirestore(initializeApp(firebaseConfig));
-  return _db;
-}
+const app = () => (_app ||= initializeApp(firebaseConfig));
+function db() { return (_db ||= getFirestore(app())); }
+function auth() { return (_auth ||= getAuth(app())); }
 
 function signIn() {
   if (_authPromise) return _authPromise;
-  const auth = getAuth(initializeApp(firebaseConfig));
+  const a = auth();
   _authPromise = new Promise((resolve, reject) => {
-    onAuthStateChanged(auth, (user) => { if (user) resolve(user.uid); });
-    signInAnonymously(auth).catch(reject);
+    const off = onAuthStateChanged(a, (user) => {
+      if (user) { off(); resolve(user.uid); }
+    });
+    // 이미 로그인돼 있으면(관리자 이메일 로그인 등) 익명 로그인으로
+    // 덮어쓰지 않습니다.
+    if (!a.currentUser) signInAnonymously(a).catch(reject);
   });
   return _authPromise;
+}
+
+/**
+ * 관리자 이메일 로그인. 익명 uid와 달리 브라우저 저장소를 지워도, 기기를
+ * 바꿔도 그대로입니다. 계정은 Firebase 콘솔에서 직접 만들어야 합니다.
+ */
+export async function signInAdminEmail(email, password) {
+  const cred = await signInWithEmailAndPassword(auth(), email, password);
+  _authPromise = Promise.resolve(cred.user.uid);
+  return cred.user;
 }
 
 export const refs = (gameId) => ({
@@ -73,8 +88,54 @@ export const refs = (gameId) => ({
 
 export const settingsRef = () => doc(db(), "settings", "global");
 
-/** 관리자 페이지에서 쓰는 익명 로그인. 이 브라우저의 uid를 돌려줍니다. */
-export const signInAdmin = () => signIn();
+/* ------------------------------------------------------------------ */
+/* 비밀 값                                                             */
+/* ------------------------------------------------------------------ */
+// 자물쇠 정답은 어디에도 실려 오지 않습니다. 정답의 해시를 문서 id로 쓰고,
+// 규칙에서 get만 허용하고 list는 막아둡니다. 맞는 값을 넣었을 때만 문서가
+// 열리고, 틀리면 "문서 없음"만 돌아옵니다.
+
+export async function sha256(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export const answerId = (salt, value) => sha256(`${salt}:answer:${value}`);
+
+/** 정답이면 true. 네트워크 응답에도 정답은 담기지 않습니다. */
+export async function checkAnswer(salt, guess) {
+  await signIn();
+  try {
+    const snap = await getDoc(doc(db(), "lockAnswers", await answerId(salt, guess)));
+    return snap.exists();
+  } catch (err) {
+    console.error("[checkAnswer]", err);
+    return false;
+  }
+}
+
+/** 공개된 단계까지만 읽힙니다. 그 이상은 규칙이 막습니다. */
+export async function getHint(index) {
+  try {
+    const snap = await getDoc(doc(db(), "lockHints", String(index)));
+    return snap.exists() ? snap.data().d : null;
+  } catch (_) {
+    return null;                       // 아직 잠긴 힌트
+  }
+}
+
+/** 관리자 페이지가 비밀 문서를 쓸 때 쓰는 참조 */
+export const adminDoc = (col, id) => doc(db(), col, id);
+
+/** 게임이 끝난 뒤에만 읽히는 문구 */
+export async function getPayload(gameId) {
+  try {
+    const snap = await getDoc(doc(db(), "payloads", gameId));
+    return snap.exists() ? snap.data().text : null;
+  } catch (_) {
+    return null;
+  }
+}
 
 /**
  * config.js의 기본값 위에 Firestore의 관리자 설정을 덮어씌운 게임 설정.
@@ -196,7 +257,9 @@ export async function createSession(opts) {
     }
     eventData = snap.data();
     onEvent(eventData);
-    if (target && eventData.status === "completed") finish(false);
+    // 끝난 게임은 계속 끝난 상태로 남습니다. 나중에 들어온 사람도 곧바로
+    // 결과 화면을 봅니다. 되돌리려면 Firebase 콘솔에서 문서를 지우세요.
+    if (eventData.status === "completed") finish(false);
     pushStatus();
   }, (err) => {
     console.error("[game]", err);

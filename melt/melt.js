@@ -3,16 +3,13 @@
 // 암호 문구를 보고, 나머지는 Good Job을 봅니다.
 
 import {
-  createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "../shared/core.js?v=4";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=4";
+  createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
+  getPayload
+} from "../shared/core.js?v=5";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=5";
 
 const GAME_ID = "melt";
 let target = 50000;               // 관리자 설정을 읽어 덮어씁니다.
-
-// 한글 자판으로 치면 읽히는 문구입니다. 승자만 봅니다.
-const WINNER_PAYLOAD =
-  "cnrgkgkqslek !\n\ndl ghkausdmf zoqcugkdu tmffordmfh gmrrhadprp wjsthdgowntpdy !";
 
 const $ = (id) => document.getElementById(id);
 const elCount = $("count");
@@ -69,14 +66,17 @@ async function main() {
     target,
     onTotal: render,
     onStatus: statusHandler(),
-    onComplete: (iWon) => {
+    onComplete: async (iWon) => {
       stopDrops();
       elIce.style.visibility = "hidden";
-      if (iWon) {
-        showDone({ title: "🧊", msg: WINNER_PAYLOAD, gameId: GAME_ID });
-      } else {
+      if (!iWon) {
         showDone({ title: "Good Job!", gameId: GAME_ID });
+        return;
       }
+      // 승자 문구는 코드에 없습니다. 게임이 끝난 뒤에만 열리는 문서에서
+      // 받아옵니다. 관리자가 아직 넣지 않았다면 문구 없이 넘어갑니다.
+      const text = await getPayload(GAME_ID);
+      showDone({ title: "🧊", msg: text || "", gameId: GAME_ID });
     }
   });
 

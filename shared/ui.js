@@ -1,7 +1,7 @@
 // 다섯 게임이 공유하는 화면 조각: 연결 상태 표시와 결과 화면.
 
-import { GOOGLE_FORM_URL } from "../config.js?v=4";
-import { track } from "./core.js?v=4";
+import { GOOGLE_FORM_URL } from "../config.js?v=5";
+import { track } from "./core.js?v=5";
 
 const $ = (id) => document.getElementById(id);
 
@@ -19,7 +19,11 @@ export function statusHandler(onFirstConnect) {
   return (state) => {
     if (state === "online") {
       el.classList.add("hide");
-      stage.classList.add("in");
+      // 무대는 hidden 속성으로 시작합니다. 연결된 뒤에야 드러납니다.
+      stage.hidden = false;
+      // hidden을 막 떼어낸 프레임에서 곧바로 in을 붙이면 전환이 생략되므로
+      // 다음 프레임으로 미룹니다.
+      requestAnimationFrame(() => stage.classList.add("in"));
       if (!connectedOnce) {
         connectedOnce = true;
         if (onFirstConnect) onFirstConnect();

@@ -1,13 +1,14 @@
 // 제작자 통계 — 다섯 게임의 참여 데이터를 한 화면에 모읍니다.
 //
-// 비밀번호는 보안이 아니라 실수 방지용입니다. 정적 페이지이므로 소스를 보면
-// 누구나 읽을 수 있습니다. 그래서 이 화면은 읽기 전용이고, 데이터를 망가뜨리는
-// 기능은 규칙 층에서 아예 막혀 있습니다.
+// 이 주소는 공개돼 있고 코드도 누구나 읽을 수 있습니다. 실제 보호는 Firebase
+// 이메일 계정 로그인과 보안 규칙이 합니다. 관리자 계정이 아니면 로그인 자체가
+// 되지 않고, 설정·정답 문서에는 쓰기도 막혀 있습니다.
 
-import { GAMES, ADMIN_PASSWORD } from "../config.js?v=4";
+import { GAMES } from "../config.js?v=5";
 import {
-  loadStats, configured, fmt, gameSettings, settingsRef, signInAdmin
-} from "../shared/core.js?v=4";
+  loadStats, configured, fmt, gameSettings, settingsRef, signInAdminEmail,
+  answerId, adminDoc
+} from "../shared/core.js?v=5";
 import { setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const $ = (id) => document.getElementById(id);
@@ -156,18 +157,11 @@ const FIELDS = {
   "set-button-maxPresses": ["button", "maxPresses"]
 };
 
-async function sha256(text) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 async function fillSettings() {
   const merged = await gameSettings();
   for (const [id, [game, key]] of Object.entries(FIELDS)) {
     $(id).value = merged[game][key];
   }
-  signInAdmin().then((uid) => { $("my-uid").textContent = uid; })
-               .catch(() => { $("my-uid").textContent = "(로그인 실패)"; });
 }
 
 async function saveSettings() {
@@ -184,8 +178,10 @@ async function saveSettings() {
     payload[game][key] = v;
   }
 
-  // 자물쇠 정답은 평문으로 저장하지 않습니다. 접두사별 해시만 올립니다.
+  // 자물쇠 정답은 어디에도 평문으로 저장하지 않습니다. 정답의 해시를 문서
+  // id로 쓴 빈 문서를 만들 뿐이고, 힌트 숫자는 따로 잠긴 문서에 넣습니다.
   const answer = $("set-lock-answer").value.trim();
+  const secretWrites = [];
   if (answer) {
     if (!/^\d+$/.test(answer)) {
       msg.className = "save-msg err";
@@ -193,22 +189,32 @@ async function saveSettings() {
       return;
     }
     const salt = merged.lock.answerSalt;
-    const hashes = [];
-    for (let n = 1; n <= answer.length; n++) {
-      const prefix = answer.slice(0, n);
-      hashes.push(await sha256(`${salt}:${n}:${prefix}`));
+    secretWrites.push(
+      setDoc(adminDoc("lockAnswers", await answerId(salt, answer)), { ok: true })
+    );
+    for (let i = 0; i < answer.length; i++) {
+      secretWrites.push(
+        setDoc(adminDoc("lockHints", String(i + 1)), { d: answer[i] })
+      );
     }
     payload.lock = payload.lock || { ...merged.lock };
     payload.lock.digits = answer.length;
-    payload.lock.prefixHashes = hashes;
     payload.lock.answerSalt = salt;
   }
 
+  // 얼음 승자 문구도 코드가 아니라 서버에 둡니다. 게임이 끝나기 전에는
+  // 규칙이 읽기를 막습니다.
+  const meltText = $("set-melt-payload").value.trim();
+  if (meltText) {
+    secretWrites.push(setDoc(adminDoc("payloads", "melt"), { text: meltText }));
+  }
+
   try {
-    await setDoc(settingsRef(), payload, { merge: true });
+    await Promise.all([setDoc(settingsRef(), payload, { merge: true }), ...secretWrites]);
     msg.className = "save-msg ok";
     msg.textContent = "저장했습니다. 참여자는 새로고침하면 반영됩니다.";
     $("set-lock-answer").value = "";
+    $("set-melt-payload").value = "";
   } catch (err) {
     console.error("[save]", err);
     msg.className = "save-msg err";
@@ -217,22 +223,40 @@ async function saveSettings() {
   }
 }
 
-function openPanel() {
+function openPanel(email) {
   $("gate").hidden = true;
   $("panel").hidden = false;
+  $("my-uid").textContent = email;
   fillSettings();
   loadAll();
 }
 
 $("save").addEventListener("click", saveSettings);
 
-$("gate-form").addEventListener("submit", (e) => {
+const AUTH_ERRORS = {
+  "auth/invalid-credential": "이메일이나 비밀번호가 맞지 않습니다.",
+  "auth/invalid-email": "이메일 형식이 올바르지 않습니다.",
+  "auth/user-not-found": "그런 계정이 없습니다. Firebase 콘솔에서 만들어주세요.",
+  "auth/wrong-password": "비밀번호가 맞지 않습니다.",
+  "auth/too-many-requests": "시도가 너무 많습니다. 잠시 후 다시 해주세요.",
+  "auth/operation-not-allowed":
+    "Firebase 콘솔 > Authentication 에서 이메일/비밀번호 로그인을 켜주세요."
+};
+
+$("gate-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if ($("gate-pw").value === ADMIN_PASSWORD) {
-    sessionStorage.setItem("stats_ok", "1");
-    openPanel();
-  } else {
-    $("gate-error").hidden = false;
+  const err = $("gate-error");
+  err.hidden = true;
+  try {
+    const user = await signInAdminEmail(
+      $("gate-email").value.trim(), $("gate-pw").value
+    );
+    $("gate-pw").value = "";
+    openPanel(user.email);
+  } catch (ex) {
+    console.error("[login]", ex);
+    err.hidden = false;
+    err.textContent = AUTH_ERRORS[ex.code] || `로그인 실패 (${ex.code || ex.message})`;
   }
 });
 
@@ -241,6 +265,4 @@ $("refresh").addEventListener("click", loadAll);
 if (!configured) {
   $("gate").innerHTML =
     "<h1>설정이 필요합니다</h1><p class='note'><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.</p>";
-} else if (sessionStorage.getItem("stats_ok") === "1") {
-  openPanel();
 }

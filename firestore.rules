@@ -14,15 +14,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 게임 설정(목표치·정답 해시 등). 관리자 브라우저 하나만 쓸 수 있습니다.
+    // 게임 설정(목표치 등). 관리자 계정만 쓸 수 있습니다.
     //
-    // ▼ 아래 ADMIN_UID를 /stats/ 화면 아래쪽에 표시되는 "관리자 ID"로
-    //   바꾸고 규칙을 다시 배포하세요. 그 전까지는 아무도 저장할 수 없습니다.
-    //   (브라우저 저장소를 지우면 ID가 바뀌므로 다시 넣어야 합니다.)
+    // 관리자 계정 이메일입니다. Firebase 콘솔 > Authentication 에서 이 이메일로
+    // 계정을 만들어 두면, 브라우저를 바꿔도 기기를 바꿔도 그대로 쓸 수 있습니다.
+    // 이메일이 공개돼도 비밀번호 없이는 로그인할 수 없습니다.
+    
     match /settings/{doc} {
       allow read: if true;
       allow write: if request.auth != null
-                   && request.auth.uid == 'ADMIN_UID';
+                   && request.auth.token.email == 'jyt6640@gmail.com';
+    }
+
+    // 자물쇠 정답. 문서 id가 정답의 해시입니다.
+    //   - get만 허용하므로 맞는 값을 넣어야 문서가 열립니다.
+    //   - list를 막았으므로 목록을 훑어 정답을 알아낼 수 없습니다.
+    //   - 정답도 정답의 해시도 클라이언트로 내려가지 않습니다.
+    match /lockAnswers/{hash} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow write: if request.auth != null && request.auth.token.email == 'jyt6640@gmail.com';
+    }
+
+    // 자물쇠 힌트. 공개 단계에 도달한 자리까지만 읽힙니다.
+    match /lockHints/{index} {
+      allow get: if request.auth != null
+                 && int(index) <=
+                    get(/databases/$(database)/documents/games/lock).data.hintLevel;
+      allow list: if false;
+      allow write: if request.auth != null && request.auth.token.email == 'jyt6640@gmail.com';
+    }
+
+    // 게임이 끝난 뒤에만 읽히는 문구
+    match /payloads/{gameId} {
+      allow get: if request.auth != null
+                 && get(/databases/$(database)/documents/games/$(gameId))
+                      .data.status == 'completed';
+      allow list: if false;
+      allow write: if request.auth != null && request.auth.token.email == 'jyt6640@gmail.com';
     }
 
     match /games/{gameId} {
@@ -34,7 +63,8 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data)
                          .affectedKeys()
                          .hasOnly(['status', 'endTime', 'milestones',
-                                   'lastPress', 'lastPresser', 'winner']);
+                                   'lastPress', 'lastPresser', 'winner',
+                                   'hintLevel']);
       allow delete: if false;
 
       // 카운터 샤드 — 동시 쓰기 분산용

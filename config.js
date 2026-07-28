@@ -26,23 +26,16 @@ export const GAMES = {
   lock: {
     title: "자물쇠",
     digits: 3,
-    // 평문 정답은 코드 어디에도 없습니다. 대신 앞에서부터 n자리를 자른
-    // 접두사의 솔트 SHA-256 해시만 둡니다. 마지막 항목이 정답 전체의
-    // 해시이자 검증에 쓰이고, 앞의 항목들은 힌트를 한 자리씩 역산하는 데
-    // 쓰입니다(임계치에 도달했을 때만 역산합니다).
+    // 정답은 이 파일에도, 브라우저로 내려오는 어떤 응답에도 들어 있지
+    // 않습니다. 정답의 해시를 문서 id로 쓴 lockAnswers 문서를 열어보는
+    // 방식으로만 확인합니다(규칙에서 get만 허용, list 금지).
     //
-    // 정답을 바꾸려면 자릿수만큼 아래를 실행해 순서대로 넣으세요.
-    //   S=wootecho-lock-2026
-    //   for p in 5 51 512; do printf "%s:%d:%s" "$S" "${#p}" "$p" | shasum -a 256; done
+    // 정답은 /stats/ 관리자 화면에서 설정합니다. 설정하기 전까지 자물쇠는
+    // "준비 중"으로 표시됩니다.
     //
-    // ※ 세 자리는 경우의 수가 1,000개뿐이라 작정하면 전수 대입으로 뚫립니다.
-    //    소스보기나 Ctrl+F로 정답이 안 보이게 하는 수준의 보호입니다.
+    // ※ 세 자리는 경우의 수가 1,000개뿐이라, 작정하고 1,000번 요청을
+    //    보내면 뚫립니다. 자릿수를 늘릴수록 강해집니다.
     answerSalt: "wootecho-lock-2026",
-    prefixHashes: [
-      "5842d2824d4195b19f4643fe2f255a8f342cd6386d17aff4d72d4d289e599664",
-      "d880fb13e3f80b397df3d502282ea78a20491e1df11adda8c2d185f7e11ffa53",
-      "7f8bd182c6d8d769002ca3227bd4ef9b8ae24bf7b562d2e640836b5a0318fbe8"
-    ],
     // 전체 시도 횟수가 이 값을 넘을 때마다 왼쪽부터 한 자리씩 공개됩니다.
     hintEvery: 1000,
     // 힌트 목적의 연타를 막는 시도 간 쿨다운(ms).
@@ -70,13 +63,7 @@ export const GAMES = {
   }
 };
 
-// 3) 제작자 통계 화면 비밀번호.
-//    ※ 이 코드는 공개 저장소에 그대로 노출됩니다. 보안이 아니라
-//       실수로 열리는 것을 막는 용도일 뿐입니다. 다른 곳에서 쓰는
-//       비밀번호를 절대 넣지 마세요.
-export const ADMIN_PASSWORD = "wootecho";
-
-// 4) 구글 애널리틱스 4 측정 ID (예: "G-XXXXXXXXXX").
+// 3) 구글 애널리틱스 4 측정 ID (예: "G-XXXXXXXXXX").
 //    비워두면 GA 스크립트를 아예 로드하지 않습니다.
 //    ※ 클릭 하나하나를 GA로 보내지 않습니다. 수만 건을 개별 이벤트로
 //       보내면 수집 한도에 걸리고 리포트가 망가집니다.
@@ -84,7 +71,7 @@ export const ADMIN_PASSWORD = "wootecho";
 //       정확한 참여 수치는 통계 페이지(Firestore)가 정본입니다.
 export const GA_MEASUREMENT_ID = "G-GS7JQCYXCX";
 
-// 5) Firebase 웹 앱 설정.
+// 4) Firebase 웹 앱 설정.
 //    Firebase 콘솔 > 프로젝트 설정 > 내 앱 > SDK 설정 및 구성.
 export const firebaseConfig = {
   apiKey: "AIzaSyAEXF185njXPlQGn-MeMjkVpQezcdOUJwA",

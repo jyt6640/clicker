@@ -10,18 +10,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared/base.css?v=4">
-<link rel="stylesheet" href="./stats.css?v=4">
+<link rel="stylesheet" href="../shared/base.css?v=5">
+<link rel="stylesheet" href="./stats.css?v=5">
 </head>
 <body>
 
 <div id="gate" class="gate">
   <h1>제작자 통계</h1>
   <form id="gate-form">
-    <input id="gate-pw" type="password" placeholder="비밀번호" autocomplete="off" aria-label="비밀번호">
-    <button type="submit">열기</button>
+    <input id="gate-email" type="email" placeholder="이메일" autocomplete="username" aria-label="이메일">
+    <input id="gate-pw" type="password" placeholder="비밀번호" autocomplete="current-password" aria-label="비밀번호">
+    <button type="submit">로그인</button>
   </form>
-  <p id="gate-error" class="gate-error" hidden>비밀번호가 일치하지 않습니다.</p>
+  <p id="gate-error" class="gate-error" hidden></p>
+  <p class="gate-note">
+    Firebase 콘솔 &gt; Authentication 에서 만든 관리자 계정으로 로그인합니다.
+  </p>
 </div>
 
 <div id="panel" class="panel" hidden>
@@ -42,6 +46,7 @@
       <label>얼음 마찰 목표<input id="set-melt-target" type="number" min="1"></label>
       <label>줄다리기 승리 격차<input id="set-tug-winBy" type="number" min="1"></label>
       <label>자물쇠 정답<input id="set-lock-answer" type="text" inputmode="numeric" placeholder="변경할 때만 입력"></label>
+      <label>얼음 승자 문구<input id="set-melt-payload" type="text" placeholder="변경할 때만 입력"></label>
       <label>자물쇠 힌트 간격<input id="set-lock-hintEvery" type="number" min="1"></label>
       <label>자물쇠 쿨다운(ms)<input id="set-lock-cooldownMs" type="number" min="0"></label>
       <label>버튼 제한 시간(초)<input id="set-button-resetSeconds" type="number" min="1"></label>
@@ -55,10 +60,9 @@
     </div>
 
     <p class="hint uid-hint">
-      이 브라우저의 관리자 ID: <code id="my-uid">…</code><br>
-      설정을 저장하려면 이 값이 <code>firestore.rules</code>의
-      <code>ADMIN_UID</code> 자리에 들어가 있어야 합니다. 그래야 참여자가
-      설정을 바꿀 수 없습니다.
+      로그인 계정: <code id="my-uid">…</code><br>
+      이 계정만 설정을 바꿀 수 있습니다. 참여자는 <code>/stats/</code> 주소를
+      알아내도 로그인할 수 없어 아무것도 수정하지 못합니다.
     </p>
   </section>
 
@@ -77,6 +81,6 @@
   </p>
 </div>
 
-<script type="module" src="./stats.js?v=4"></script>
+<script type="module" src="./stats.js?v=5"></script>
 </body>
 </html>

@@ -3,15 +3,15 @@
 // 공개되고, 정답을 맞히는 것은 개인입니다.
 
 import {
-  createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "../shared/core.js?v=4";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=4";
+  createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
+  checkAnswer, getHint
+} from "../shared/core.js?v=5";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=5";
 
 const GAME_ID = "lock";
 // 관리자 설정을 읽어 덮어씁니다.
 let digits = 3;
 let answerSalt = "";
-let prefixHashes = [];
 let hintEvery = 1000;
 let cooldownMs = 2000;
 
@@ -24,26 +24,6 @@ const elShackle = $("shackle");
 const elStage = $("stage");
 
 const pop = popper(elCount, reduceMotion);
-
-/* ------------------------------------------------------------------ */
-/* 해시                                                                */
-/* ------------------------------------------------------------------ */
-async function sha256(text) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-const prefixHash = (prefix) => sha256(`${answerSalt}:${prefix.length}:${prefix}`);
-
-/** 이미 밝혀진 접두사에 0~9를 붙여 보며 다음 한 자리를 역산한다. */
-async function revealNextDigit(known) {
-  const wanted = prefixHashes[known.length];
-  if (!wanted) return null;
-  for (let d = 0; d <= 9; d++) {
-    if (await prefixHash(known + d) === wanted) return String(d);
-  }
-  return null;
-}
 
 /* ------------------------------------------------------------------ */
 /* 다이얼                                                              */
@@ -156,21 +136,26 @@ function bindDial(i, dial) {
 /* ------------------------------------------------------------------ */
 /* 힌트                                                                */
 /* ------------------------------------------------------------------ */
-let known = "";
+// 힌트 숫자도 코드에 없습니다. 공개 단계에 도달했을 때 서버에서 한 자리씩
+// 받아옵니다. 아직 잠긴 자리는 규칙이 읽기를 막습니다.
+const known = [];
 let renderedHintFor = 0;
 
-async function updateHint(attempts) {
+async function updateHint(attempts, session) {
   const unlocked = Math.min(Math.floor(attempts / hintEvery), digits);
-  if (unlocked === renderedHintFor) return;
+  if (unlocked <= renderedHintFor) return;
   renderedHintFor = unlocked;
 
-  while (known.length < unlocked) {
-    const d = await revealNextDigit(known);
+  // 공개 단계를 서버에 기록해야 그 자리 힌트를 읽을 수 있게 됩니다.
+  await session.patchGame({ hintLevel: unlocked });
+
+  for (let i = known.length; i < unlocked; i++) {
+    const d = await getHint(i + 1);
     if (d === null) break;
-    known += d;
+    known.push(d);
   }
 
-  const shown = known.split("").map((d) => `<b>${d}</b>`);
+  const shown = known.map((d) => `<b>${d}</b>`);
   while (shown.length < digits) shown.push("?");
   elHint.innerHTML = shown.join(" ");
 }
@@ -185,7 +170,6 @@ async function main() {
   const cfg = (await gameSettings())[GAME_ID];
   digits = cfg.digits;
   answerSalt = cfg.answerSalt;
-  prefixHashes = cfg.prefixHashes;
   hintEvery = cfg.hintEvery;
   cooldownMs = cfg.cooldownMs;
 
@@ -193,16 +177,19 @@ async function main() {
   buildDials();
   window.addEventListener("resize", layout);
 
-  const session = await createSession({
+  let session;
+  session = await createSession({
     gameId: GAME_ID,
     target: null,               // 상한 없이 시도 횟수를 계속 셉니다.
     onStatus: statusHandler(),
     onTotal: (attempts) => {
       elCount.textContent = fmt(attempts);
       pop();
-      updateHint(attempts);
+      // 첫 스냅샷은 createSession이 반환되기 전에 올 수 있습니다.
+      if (session) updateHint(attempts, session);
     }
   });
+  updateHint(session.total, session);
 
   let cooling = false;
 
@@ -226,7 +213,7 @@ async function main() {
       }
     }, 100);
 
-    if (await sha256(`${answerSalt}:${guess.length}:${guess}`) === prefixHashes[digits - 1]) {
+    if (await checkAnswer(answerSalt, guess)) {
       clearInterval(tick);
       await session.patchUser({ solved: true, solvedAt: Date.now() });
       elShackle.classList.add("open");
