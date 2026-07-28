@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#050505">
+<meta name="robots" content="noindex">
+<title>&nbsp;</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- 연결 상태 -->
+<div id="status" class="status pulse">연결 중</div>
+
+<!-- 메인 -->
+<main id="stage" class="stage" hidden>
+  <div id="total" class="total tabular">0</div>
+
+  <div id="cylinder" class="cylinder" role="button" tabindex="0" aria-label="클릭하기">
+    <span class="cyl-top"></span>
+    <span class="cyl-body">
+      <span class="crack crack-1"></span>
+      <span class="crack crack-2"></span>
+      <span class="crack crack-3"></span>
+      <span class="crack crack-4"></span>
+    </span>
+    <span class="cyl-bottom"></span>
+  </div>
+
+  <div id="progress" class="progress tabular">0 / 20,000</div>
+</main>
+
+<!-- 완료 화면 -->
+<section id="done" class="done" hidden>
+  <h1>끝났습니다.</h1>
+  <a id="survey" class="survey" href="#" target="_blank" rel="noopener noreferrer">설문 남기기</a>
+  <p id="survey-pending" class="survey-pending" hidden>설문 준비 중</p>
+</section>
+
+<!-- 설정 필요 안내 (Firebase 미설정 시) -->
+<section id="setup" class="setup" hidden>
+  <h2>설정이 필요합니다</h2>
+  <p><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.<br>자세한 절차는 저장소의 <code>README.md</code>에 있습니다.</p>
+</section>
+
+<!-- 제작자 통계 진입 영역 (보이지 않음) -->
+<div id="admin-trigger" class="admin-trigger" aria-hidden="true"></div>
+
+<!-- 제작자 통계 -->
+<div id="admin" class="admin" hidden>
+  <div class="admin-panel">
+    <header class="admin-head">
+      <h2>제작자 통계</h2>
+      <button id="admin-refresh" type="button" class="ghost">새로고침</button>
+      <button id="admin-close" type="button" class="ghost">닫기</button>
+    </header>
+
+    <div id="admin-loading" class="admin-loading pulse">데이터 집계 중</div>
+
+    <div id="admin-body" hidden>
+      <div class="grid">
+        <div class="cell"><span>이벤트 상태</span><b id="s-status"></b></div>
+        <div class="cell"><span>전체 클릭 수</span><b id="s-total" class="tabular"></b></div>
+        <div class="cell"><span>목표 달성률</span><b id="s-percent"></b></div>
+        <div class="cell"><span>고유 접속자 수</span><b id="s-visitors" class="tabular"></b></div>
+        <div class="cell"><span>실제 클릭 참여자 수</span><b id="s-clickers" class="tabular"></b></div>
+        <div class="cell"><span>접속자 대비 참여율</span><b id="s-rate"></b></div>
+        <div class="cell"><span>1인당 평균 클릭 수</span><b id="s-avg" class="tabular"></b></div>
+        <div class="cell"><span>최다 클릭 사용자</span><b id="s-top1n" class="tabular"></b></div>
+        <div class="cell"><span>상위 1명 비중</span><b id="s-top1"></b></div>
+        <div class="cell"><span>상위 5명 비중</span><b id="s-top5"></b></div>
+        <div class="cell"><span>목표 달성까지</span><b id="s-duration"></b></div>
+        <div class="cell"><span>이벤트 시작 시각</span><b id="s-start"></b></div>
+      </div>
+
+      <section class="block">
+        <h3>구간별 도달 시각</h3>
+        <div id="s-milestones" class="milestones"></div>
+      </section>
+
+      <section class="block">
+        <h3>익명 사용자별 기록 <small>(클릭 수 내림차순)</small></h3>
+        <div class="table-wrap">
+          <table class="lb">
+            <thead>
+              <tr><th>#</th><th>익명 ID</th><th class="num">클릭</th><th>최초 접속</th><th>최초 클릭</th><th>마지막 클릭</th></tr>
+            </thead>
+            <tbody id="s-users"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="note">
+        데이터 보호를 위해 앱 안에서는 초기화 기능을 제공하지 않습니다.
+        이 페이지는 누구나 소스를 볼 수 있는 정적 페이지라 앱 내 초기화는 참여자도 실행할 수 있기 때문입니다.
+        초기화가 필요하면 Firebase 콘솔에서 <code>clickEvent/main</code> 문서와
+        <code>shards</code> 하위 컬렉션, <code>clickUsers</code> 컬렉션을 직접 삭제하세요.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

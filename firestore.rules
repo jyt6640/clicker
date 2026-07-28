@@ -1,0 +1,53 @@
+rules_version = '2';
+
+// Firebase 콘솔 > Firestore Database > 규칙 탭에 이 내용을 그대로 붙여넣고 게시하세요.
+//
+// 설계 의도
+//  - 클릭 수는 오직 "증가"만 가능합니다. 클라이언트에서 감소·삭제·초기화가 불가능합니다.
+//    (정적 페이지라 앱 코드는 누구나 볼 수 있으므로, 데이터 보호를 규칙 층에서 강제합니다.)
+//  - 한 번의 쓰기로 올릴 수 있는 양을 제한해 대량 조작을 억제합니다.
+//  - 초기화가 필요하면 Firebase 콘솔에서 직접 문서를 삭제하세요.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 이벤트 상태 문서
+    match /clickEvent/main {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.status == 'active'
+                    && request.resource.data.endTime == null;
+      // 시작 시각과 목표치는 이후 변경할 수 없습니다.
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data)
+                         .affectedKeys().hasOnly(['status', 'endTime', 'milestones']);
+      allow delete: if false;
+
+      // 클릭 카운터 샤드 — 동시 쓰기 분산용
+      match /shards/{shard} {
+        allow read: if true;
+        allow create: if request.auth != null
+                      && request.resource.data.keys().hasOnly(['c'])
+                      && request.resource.data.c is int
+                      && request.resource.data.c > 0
+                      && request.resource.data.c <= 200;
+        allow update: if request.auth != null
+                      && request.resource.data.keys().hasOnly(['c'])
+                      && request.resource.data.c is int
+                      && request.resource.data.c > resource.data.c
+                      && request.resource.data.c - resource.data.c <= 200;
+        allow delete: if false;
+      }
+    }
+
+    // 익명 사용자별 기록 — 본인 문서만 쓸 수 있습니다.
+    match /clickUsers/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.clicks >= resource.data.clicks;
+      allow delete: if false;
+    }
+  }
+}
