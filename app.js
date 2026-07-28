@@ -2,8 +2,8 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "./shared/core.js?v=9";
-import { statusHandler, showDone, showSetupNeeded, popper } from "./shared/ui.js?v=9";
+} from "./shared/core.js?v=10";
+import { statusHandler, showDone, showSetupNeeded, popper } from "./shared/ui.js?v=10";
 
 const GAME_ID = "cylinder";
 let target = 20000;               // 관리자 설정을 읽어 덮어씁니다.

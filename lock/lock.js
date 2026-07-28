@@ -5,8 +5,8 @@
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
   checkAnswer, getHint, roundDocId, currentRound
-} from "../shared/core.js?v=9";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=9";
+} from "../shared/core.js?v=10";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=10";
 
 const GAME_ID = "lock";
 // 관리자 설정을 읽어 덮어씁니다.
@@ -14,6 +14,8 @@ let digits = 3;
 let answerSalt = "";
 let hintEvery = 1000;
 let cooldownMs = 2000;
+// 이번 회차의 문서 id. main()에서 채웁니다.
+let roundId = "";
 
 const $ = (id) => document.getElementById(id);
 const elCount = $("count");
@@ -173,7 +175,7 @@ async function main() {
   hintEvery = cfg.hintEvery;
   cooldownMs = cfg.cooldownMs;
 
-  const roundId = roundDocId(GAME_ID, await currentRound(GAME_ID));
+  roundId = roundDocId(GAME_ID, await currentRound(GAME_ID));
 
   elHint.textContent = new Array(digits).fill("?").join(" ");
   buildDials();
