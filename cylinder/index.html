@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/base.css?v=11">
-<link rel="stylesheet" href="./tug.css?v=11">
+<link rel="stylesheet" href="./cylinder.css?v=11">
 </head>
 <body>
 
@@ -20,19 +20,18 @@
 <main id="stage" class="stage" hidden>
   <div id="count" class="count tabular">0</div>
 
-  <div class="rope-area">
-    <div class="rope"></div>
-    <div class="center-mark"></div>
-    <div id="knot" class="knot"></div>
+  <div id="cylinder" class="cylinder" role="button" tabindex="0" aria-label="클릭하기">
+    <span class="cyl-top"></span>
+    <span class="cyl-body">
+      <span class="crack crack-1"></span>
+      <span class="crack crack-2"></span>
+      <span class="crack crack-3"></span>
+      <span class="crack crack-4"></span>
+    </span>
+    <span class="cyl-bottom"></span>
   </div>
 
-  <div class="scores mono">
-    <span id="score-left" class="side-left tabular">0</span>
-    <span class="dash">—</span>
-    <span id="score-right" class="side-right tabular">0</span>
-  </div>
-
-  <button id="pull" class="pull" type="button">당기기</button>
+  <div id="sub" class="sub tabular">0 / 20,000</div>
 </main>
 
 <section id="done" class="done" hidden>
@@ -44,9 +43,9 @@
 
 <section id="setup" class="setup" hidden>
   <h2>설정이 필요합니다</h2>
-  <p><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.</p>
+  <p><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.<br>자세한 절차는 저장소의 <code>README.md</code>에 있습니다.</p>
 </section>
 
-<script type="module" src="./tug.js?v=11"></script>
+<script type="module" src="./cylinder.js?v=11"></script>
 </body>
 </html>

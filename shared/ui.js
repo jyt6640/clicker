@@ -1,7 +1,7 @@
 // 다섯 게임이 공유하는 화면 조각: 연결 상태 표시와 결과 화면.
 
-import { GOOGLE_FORM_URL } from "../config.js?v=10";
-import { track } from "./core.js?v=10";
+import { GOOGLE_FORM_URL } from "../config.js?v=11";
+import { track } from "./core.js?v=11";
 
 const $ = (id) => document.getElementById(id);
 

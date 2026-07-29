@@ -1,0 +1,245 @@
+/* 메인 허브 — 아래로 쭉 스크롤하며 다섯 게임을 지나갑니다. */
+
+/* base.css는 게임 화면용으로 문서를 뷰포트에 고정하고 스크롤을 막습니다.
+   허브는 세로로 긴 문서라 그 제약을 풀어야 합니다. */
+html, body.hub {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+body.hub {
+  touch-action: auto;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.hub { scroll-behavior: auto; }
+}
+
+/* ---------- 첫 화면 ---------- */
+.hero {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  position: relative;
+}
+
+.hero-title {
+  font-size: clamp(2.4rem, 11vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.hero-title span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.4em);
+  animation: rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.hero-title span:nth-child(2) { animation-delay: 0.12s; }
+.hero-title span:nth-child(3) { animation-delay: 0.24s; }
+
+@keyframes rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-sub {
+  color: var(--dim);
+  font-size: clamp(0.85rem, 3.4vw, 1rem);
+  letter-spacing: 0.2em;
+  opacity: 0;
+  animation: rise 0.9s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.hero-total {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0;
+  animation: rise 0.9s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.hero-total b {
+  font-size: clamp(1.8rem, 8vw, 3rem);
+  font-weight: 700;
+  transition: transform 0.1s ease-out;
+}
+.hero-total b.pop { transform: scale(1.06); }
+.hero-total span {
+  font-size: 0.7rem;
+  letter-spacing: 0.28em;
+  color: #444;
+}
+
+/* 아래로 내려가라는 신호 */
+.scroll-cue {
+  position: absolute;
+  bottom: calc(2rem + env(safe-area-inset-bottom));
+  width: 1px;
+  height: 48px;
+  background: #222;
+  overflow: hidden;
+}
+.scroll-cue span {
+  position: absolute;
+  inset: 0;
+  background: var(--fg);
+  animation: drip 1.8s ease-in-out infinite;
+}
+@keyframes drip {
+  0%   { transform: translateY(-100%); }
+  60%  { transform: translateY(100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* ---------- 게임 한 칸 ---------- */
+.card {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 4rem 1.5rem;
+  text-align: center;
+  position: relative;
+  border-top: 1px solid #101010;
+}
+
+/* 카드마다 다른 색 기운 */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, var(--glow) 0%, transparent 62%);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.card.seen::before { opacity: 1; }
+
+.card > * { position: relative; }
+
+.card-no {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.4em;
+  color: #3a3a3a;
+}
+
+.card h2 {
+  font-size: clamp(1.9rem, 8.5vw, 3.4rem);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.card p {
+  color: var(--dim);
+  font-size: clamp(0.85rem, 3.4vw, 1rem);
+  line-height: 1.9;
+  max-width: 22rem;
+}
+
+/* 살아 있는 숫자 */
+.card-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(2.4rem, 12vw, 4.5rem);
+  line-height: 1;
+  color: var(--tone);
+  text-shadow: 0 0 45px var(--glow);
+  transition: transform 0.1s ease-out;
+}
+.card-count.pop { transform: scale(1.05); }
+.card-unit {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  color: #444;
+  margin-top: -0.5rem;
+}
+
+/* 진행 막대 */
+.bar {
+  width: min(78vw, 22rem);
+  height: 3px;
+  border-radius: 2px;
+  background: #161616;
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: var(--tone);
+  box-shadow: 0 0 12px var(--glow);
+  transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.enter {
+  margin-top: 0.75rem;
+  padding: 1rem 2.6rem;
+  border: 1px solid #2e2e2e;
+  border-radius: 999px;
+  color: #ddd;
+  text-decoration: none;
+  letter-spacing: 0.24em;
+  font-size: 0.85rem;
+  transition: color 0.25s, border-color 0.25s, transform 0.12s, box-shadow 0.25s;
+}
+.enter:hover, .enter:focus-visible {
+  color: #fff;
+  border-color: var(--tone);
+  box-shadow: 0 0 26px var(--glow);
+}
+.enter:active { transform: scale(0.96); }
+
+.card-done {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  color: var(--accent);
+}
+
+/* 스크롤에 맞춰 떠오르기 — 스크립트가 살아 있을 때만 숨깁니다.
+   JS가 죽거나 관찰자가 동작하지 않는 환경에서 내용이 사라지면 안 됩니다. */
+.reveal { transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.js .reveal { opacity: 0; transform: translateY(26px); }
+.card.seen .reveal { opacity: 1; transform: none; }
+.card.seen .reveal:nth-child(2) { transition-delay: 0.06s; }
+.card.seen .reveal:nth-child(3) { transition-delay: 0.12s; }
+.card.seen .reveal:nth-child(4) { transition-delay: 0.18s; }
+.card.seen .reveal:nth-child(5) { transition-delay: 0.24s; }
+.card.seen .reveal:nth-child(6) { transition-delay: 0.3s; }
+.card.seen .reveal:nth-child(7) { transition-delay: 0.36s; }
+
+/* ---------- 바닥 ---------- */
+.foot {
+  padding: 5rem 1.5rem calc(4rem + env(safe-area-inset-bottom));
+  text-align: center;
+  border-top: 1px solid #101010;
+}
+.foot p { color: #333; font-size: 0.75rem; letter-spacing: 0.18em; }
+.foot-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: #2a2a2a;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-decoration: none;
+}
+.foot-link:hover { color: #666; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-title span, .hero-sub, .hero-total { animation: none; opacity: 1; transform: none; }
+  .scroll-cue span { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .card::before { transition: none; }
+  .card-count, .bar i, .enter { transition: none; }
+}

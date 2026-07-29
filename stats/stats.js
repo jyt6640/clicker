@@ -4,17 +4,17 @@
 // 이메일 계정 로그인과 보안 규칙이 합니다. 관리자 계정이 아니면 로그인 자체가
 // 되지 않고, 설정·정답 문서에는 쓰기도 막혀 있습니다.
 
-import { GAMES } from "../config.js?v=10";
+import { GAMES } from "../config.js?v=11";
 import {
   loadStats, configured, fmt, gameSettings, settingsRef, signInAdminEmail,
   answerId, adminDoc, listRounds, roundDocId, hintDocId, resetSettingsCache
-} from "../shared/core.js?v=10";
+} from "../shared/core.js?v=11";
 import { setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const $ = (id) => document.getElementById(id);
 
 const LAYOUT = {
-  cylinder: { path: "../", target: GAMES.cylinder.target, unit: "클릭" },
+  cylinder: { path: "../cylinder/", target: GAMES.cylinder.target, unit: "클릭" },
   melt: { path: "../melt/", target: GAMES.melt.target, unit: "마찰" },
   lock: { path: "../lock/", target: null, unit: "시도" },
   tug: { path: "../tug/", target: null, unit: "당기기" },

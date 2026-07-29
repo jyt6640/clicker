@@ -91,4 +91,9 @@ export const firebaseConfig = {
 export const SHARD_COUNT = 20;
 
 // 큐에 쌓인 입력을 서버로 밀어 넣는 주기(ms).
-export const FLUSH_INTERVAL_MS = 500;
+//
+// 이 값이 Firestore 사용량을 좌우합니다. 접속자 전원이 서로의 샤드를
+// 구독하므로 읽기량은 대략 (쓰기 횟수 x 접속자 수)입니다. 주기를 늘리면
+// 한 번에 더 많은 입력을 묶어 보내므로 쓰기도 읽기도 그만큼 줄어듭니다.
+// 대신 화면에 숫자가 반영되기까지 그만큼 늦어집니다.
+export const FLUSH_INTERVAL_MS = 1500;
