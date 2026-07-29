@@ -114,7 +114,10 @@ if (dump.legacy?.shards?.length || dump.legacy?.users?.length) {
 
 for (const [id, r] of Object.entries(dump.rounds || {})) {
   if (!r || !r.game) continue;
-  rounds.push(toRound(id, r.game, r.shards || [], r.users || []));
+  // 회차 도입 전에 만들어진 문서는 id에 -r 접미사가 없습니다.
+  // 0회차로 보존해 통계 페이지가 회차로 인식할 수 있게 합니다.
+  const roundId = /-r\d+$/.test(id) ? id : `${id}-r0`;
+  rounds.push(toRound(roundId, r.game, r.shards || [], r.users || []));
 }
 
 let ok = 0;
