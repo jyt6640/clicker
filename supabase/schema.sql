@@ -407,11 +407,21 @@ end $$;
 -- ==========================================================================
 -- 권한
 -- ==========================================================================
--- 익명 사용자에게는 RPC 실행 권한만 줍니다. 테이블 쓰기는 열지 않습니다.
-revoke all on all tables in schema public from anon, authenticated;
-grant select on public.games, public.counters, public.participants, public.settings
-  to anon, authenticated;
+-- 읽기가 필요한 네 테이블만 select를 엽니다. 대시보드의
+-- Data API > Exposed tables 목록에도 이 네 개가 켜져 있어야 합니다.
+--
+-- 스키마 전체에 revoke를 걸지 않는 이유: Supabase의 노출 토글이 같은 권한을
+-- 관리하기 때문에, 광범위한 revoke는 대시보드 설정과 서로 덮어씁니다.
+grant usage on schema public to anon, authenticated;
+grant select on public.games        to anon, authenticated;
+grant select on public.counters     to anon, authenticated;
+grant select on public.participants to anon, authenticated;
+grant select on public.settings     to anon, authenticated;
 grant insert, update on public.settings to authenticated;
+
+-- 비밀 값은 어떤 역할도 직접 건드릴 수 없습니다. security definer 함수만
+-- 들여다봅니다. 대시보드에서도 secrets는 노출하지 마세요.
+revoke all on public.secrets from anon, authenticated;
 
 grant execute on function
   public.join_game(text, bigint),

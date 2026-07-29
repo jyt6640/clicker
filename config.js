@@ -70,7 +70,7 @@ export const GA_MEASUREMENT_ID = "G-GS7JQCYXCX";
 //    anon key는 공개돼도 됩니다. 실제 접근 통제는 행 수준 보안 정책과
 //    서버 함수가 합니다 (supabase/schema.sql).
 export const supabaseConfig = {
-  url: "",
+  url: "https://wifvtajyspfihbxbesdw.supabase.co",
   anonKey: ""
 };
 
