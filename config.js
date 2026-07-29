@@ -71,7 +71,7 @@ export const GA_MEASUREMENT_ID = "G-GS7JQCYXCX";
 //    서버 함수가 합니다 (supabase/schema.sql).
 export const supabaseConfig = {
   url: "https://wifvtajyspfihbxbesdw.supabase.co",
-  anonKey: ""
+  anonKey: "sb_publishable_5pK0xtKJm7-BeXEXqqR6Tw_7CMUBHxM"
 };
 
 // ==========================================================================
