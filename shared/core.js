@@ -1,4 +1,4 @@
-// 다섯 게임이 공유하는 코어 — Supabase 판.
+// 다섯 게임이 공유하는 코어.
 //
 // 데이터는 회차 단위로 나뉩니다. games.id = '{게임}-r{회차}'.
 // 초기화 대신 회차를 올리므로 지난 기록이 지워지지 않습니다.
@@ -11,7 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 import {
   supabaseConfig, GA_MEASUREMENT_ID, FLUSH_INTERVAL_MS, GAMES
-} from "../config.js?v=14";
+} from "../config.js?v=15";
 
 export const configured =
   Boolean(supabaseConfig.url && supabaseConfig.anonKey);

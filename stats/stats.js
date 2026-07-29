@@ -1,14 +1,14 @@
 // 제작자 통계 — 다섯 게임의 참여 데이터를 한 화면에 모읍니다.
 //
-// 이 주소는 공개돼 있고 코드도 누구나 읽을 수 있습니다. 실제 보호는 Firebase
-// 이메일 계정 로그인과 보안 규칙이 합니다. 관리자 계정이 아니면 로그인 자체가
-// 되지 않고, 설정·정답 문서에는 쓰기도 막혀 있습니다.
+// 이 주소는 공개돼 있고 코드도 누구나 읽을 수 있습니다. 실제 보호는 Supabase
+// 이메일 계정 로그인과 행 수준 보안 정책이 합니다. 관리자 계정이 아니면 로그인
+// 자체가 되지 않고, 설정·정답은 서버 함수가 관리자만 통과시킵니다.
 
-import { GAMES } from "../config.js?v=14";
+import { GAMES } from "../config.js?v=15";
 import {
   loadStats, configured, fmt, gameSettings, saveSettings, signInAdminEmail,
   setLockAnswer, setPayload, listRounds, roundDocId, resetSettingsCache
-} from "../shared/core.js?v=14";
+} from "../shared/core.js?v=15";
 
 const $ = (id) => document.getElementById(id);
 
@@ -127,7 +127,7 @@ async function loadAll() {
 
 function bindRoundButtons() {
   document.querySelectorAll("[data-new-round]").forEach((btn) => {
-    btn.addEventListener("click", () => newRound(btn.dataset.newRound));
+    btn.addEventListener("click", () => newRound(btn.dataset.newRound, btn));
   });
 }
 
@@ -249,96 +249,38 @@ function renderRound(id, r) {
 }
 
 /** 지우지 않고 회차만 올립니다. 이전 회차 기록은 그대로 남습니다. */
-async function newRound(id) {
-  const now = (await gameSettings())[id]?.round || 1;
+//
+// 네이티브 confirm()을 쓰지 않습니다. 브라우저가 대화상자를 억제하면
+// (한 번 "추가 대화상자 표시 안 함"을 누른 경우 등) 아무것도 뜨지 않은 채
+// false가 돌아와, 버튼이 고장 난 것처럼 보입니다.
+async function newRound(id, btn) {
+  const merged = await gameSettings();
+  const now = merged[id]?.round || 1;
   const next = now + 1;
-  if (!confirm(
-    `${GAMES[id].title}을(를) ${next}회차로 시작할까요?\n\n` +
-    `${now}회차 기록은 지워지지 않고 그대로 남습니다. ` +
-    `참여자는 새로고침하면 새 회차로 들어갑니다.` +
-    (id === "lock" ? "\n\n자물쇠는 새 회차 정답을 다시 설정해야 열립니다." : "")
-  )) return;
 
-  const merged = await gameSettings();
-  try {
-    await saveSettings({ ...merged, [id]: { ...merged[id], round: next } });
-    loadAll();
-  } catch (err) {
-    console.error("[newRound]", err);
-    alert(`회차를 올리지 못했습니다.\n\n${explain(err)}`);
-  }
-}
+  const box = document.createElement("span");
+  box.className = "confirm";
+  box.innerHTML =
+    `<span>${next}회차로? ${now}회차 기록은 남습니다` +
+    `${id === "lock" ? " · 정답 다시 설정 필요" : ""}</span>` +
+    `<button type="button" class="ghost go">시작</button>` +
+    `<button type="button" class="ghost no">취소</button>`;
+  btn.replaceWith(box);
 
-/* ------------------------------------------------------------------ */
-/* 게임 설정 편집                                                       */
-/* ------------------------------------------------------------------ */
-// 화면의 입력칸 id → [게임, 항목]
-const FIELDS = {
-  "set-cylinder-target": ["cylinder", "target"],
-  "set-melt-target": ["melt", "target"],
-  "set-tug-winBy": ["tug", "winBy"],
-  "set-lock-hintEvery": ["lock", "hintEvery"],
-  "set-lock-cooldownMs": ["lock", "cooldownMs"],
-  "set-button-resetSeconds": ["button", "resetSeconds"],
-  "set-button-hideUnderSeconds": ["button", "hideUnderSeconds"],
-  "set-button-maxPresses": ["button", "maxPresses"]
-};
-
-async function fillSettings() {
-  const merged = await gameSettings();
-  for (const [id, [game, key]] of Object.entries(FIELDS)) {
-    $(id).value = merged[game][key];
-  }
-}
-
-async function onSave() {
-  const msg = $("save-msg");
-  msg.className = "save-msg";
-  msg.textContent = "저장 중…";
-
-  const merged = await gameSettings();
-  const payload = {};
-  for (const [id, [game, key]] of Object.entries(FIELDS)) {
-    const v = Number($(id).value);
-    if (!Number.isFinite(v)) continue;
-    payload[game] = payload[game] || { ...(merged[game] || {}) };
-    payload[game][key] = v;
-  }
-
-  const answer = $("set-lock-answer").value.trim();
-  if (answer && !/^\d+$/.test(answer)) {
-    msg.className = "save-msg err";
-    msg.textContent = "자물쇠 정답은 숫자만 입력하세요.";
-    return;
-  }
-  const meltText = $("set-melt-payload").value.trim();
-
-  try {
-    if (answer) {
-      payload.lock = payload.lock || { ...merged.lock };
-      payload.lock.digits = answer.length;
+  const restore = () => box.replaceWith(btn);
+  box.querySelector(".no").addEventListener("click", restore);
+  box.querySelector(".go").addEventListener("click", async () => {
+    box.querySelector(".go").disabled = true;
+    box.querySelector("span").textContent = "시작 중…";
+    try {
+      await saveSettings({ ...merged, [id]: { ...merged[id], round: next } });
+      loadAll();
+    } catch (err) {
+      console.error("[newRound]", err);
+      box.querySelector("span").textContent = explain(err);
+      box.querySelector(".go").disabled = false;
     }
-    await saveSettings(payload);
-
-    // 정답과 문구는 서버 함수를 통해서만 들어갑니다. 평문은 브라우저를
-    // 떠나는 순간부터 서버 안에만 존재합니다.
-    if (answer) {
-      await setLockAnswer(roundDocId("lock", payload.lock?.round || merged.lock.round || 1), answer);
-    }
-    if (meltText) {
-      await setPayload(roundDocId("melt", payload.melt?.round || merged.melt.round || 1), meltText);
-    }
-
-    resetSettingsCache();
-    msg.className = "save-msg ok";
-    msg.textContent = "저장했습니다. 참여자는 새로고침하면 반영됩니다.";
-    $("set-lock-answer").value = "";
-    $("set-melt-payload").value = "";
-  } catch (err) {
-    console.error("[save]", err);
-    msg.className = "save-msg err";
-    msg.textContent = `저장 실패 — ${explain(err)}`;
-  }
+  });
 }
 
 function openPanel(email) {

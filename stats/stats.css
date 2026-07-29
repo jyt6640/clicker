@@ -79,7 +79,22 @@ body {
   font-family: inherit;
   cursor: pointer;
 }
-.ghost:hover { color: #fff; border-color: #444; }
+.ghost:hover:not(:disabled) { color: #fff; border-color: #444; }
+.ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 새 라운드 확인 — 네이티브 대화상자를 대신합니다. */
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #3a2a12;
+  border-radius: 10px;
+  background: #14100a;
+}
+.confirm > span { color: #c8a86a; font-size: 0.75rem; }
+.confirm .go { color: #e8c07d; border-color: #3a2a12; }
 
 .loading { color: var(--dim); letter-spacing: 0.2em; padding: 2rem 0; }
 .load-error {

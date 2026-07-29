@@ -4,8 +4,8 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "../shared/core.js?v=14";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=14";
+} from "../shared/core.js?v=15";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=15";
 
 const GAME_ID = "tug";
 let winBy = 3000;                 // 관리자 설정을 읽어 덮어씁니다.

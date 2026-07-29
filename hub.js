@@ -2,13 +2,13 @@
 //
 // 게임 화면과 달리 여기서는 아무것도 쓰지 않습니다. 읽기만 합니다.
 
-import { GAMES } from "./config.js?v=14";
+import { GAMES } from "./config.js?v=15";
 import {
   readTotals, gameSettings, roundDocId, configured, fmt, reduceMotion
-} from "./shared/core.js?v=14";
+} from "./shared/core.js?v=15";
 
 // 허브는 다섯 게임을 한꺼번에 보여주므로 실시간 구독을 쓰면 읽기량이
-// 게임 화면의 다섯 배가 됩니다. Firestore 읽기는 과금 대상이라, 여기서는
+// 게임 화면의 다섯 배가 됩니다. 실시간 메시지도 사용량이라, 여기서는
 // 주기적으로 한 번씩만 읽습니다.
 const POLL_MS = 15000;
 
@@ -153,7 +153,7 @@ function watchCounts(settings) {
 async function main() {
   if (!configured) {
     elGames.innerHTML =
-      "<section class='card'><h2>설정이 필요합니다</h2><p><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.</p></section>";
+      "<section class='card'><h2>설정이 필요합니다</h2><p><code>config.js</code>의 <code>supabaseConfig</code>를 채워주세요.</p></section>";
     return;
   }
 
