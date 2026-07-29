@@ -66,6 +66,8 @@ body {
   margin-bottom: 1.75rem;
 }
 .top h1 { flex: 1; font-size: 1.1rem; letter-spacing: 0.2em; }
+/* 낡은 캐시를 보고 있는지 한눈에 알 수 있게 빌드 번호를 적어둡니다. */
+.build { color: #333; font-size: 0.7rem; letter-spacing: 0.1em; margin-left: 0.5rem; }
 
 .ghost {
   background: none;

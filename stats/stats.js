@@ -50,11 +50,28 @@ function explain(err) {
   return `처리하지 못했습니다 (${code || msg || err}).`;
 }
 
+/** 게임 머리말과 새 라운드 버튼. 집계를 기다리지 않고 먼저 그립니다. */
+function gameHead(id) {
+  return `
+    <header class="game-head">
+      <h2>${GAMES[id].title}</h2>
+      <a class="url" href="${LAYOUT[id].path}" target="_blank" rel="noopener">${LAYOUT[id].path}</a>
+      <button type="button" class="ghost" data-new-round="${id}">새 라운드 시작</button>
+    </header>`;
+}
+
 async function loadAll() {
   const games = $("games");
   $("loading").hidden = false;
-  games.innerHTML = "";
   const ids = Object.keys(LAYOUT);
+
+  // 집계는 회차 수만큼 요청이 오가서 몇 초 걸립니다. 그동안 화면에 누를 것이
+  // 하나도 없으면 페이지가 멈춘 것처럼 보이므로, 조작할 수 있는 부분을 먼저
+  // 그려두고 숫자만 나중에 채웁니다.
+  games.innerHTML = ids.map((id) =>
+    `<section class="game" data-game="${id}">${gameHead(id)}
+       <p class="note">집계 중…</p></section>`).join("");
+  bindRoundButtons();
 
   let merged, byGame;
   try {
@@ -65,14 +82,7 @@ async function loadAll() {
     // 새 라운드 버튼은 남겨서 계속 조작할 수 있게 합니다.
     console.error("[stats]", err);
     games.innerHTML = `<p class="load-error">${explain(err)}</p>` +
-      ids.map((id) => `
-        <section class="game">
-          <header class="game-head">
-            <h2>${GAMES[id].title}</h2>
-            <a class="url" href="${LAYOUT[id].path}" target="_blank" rel="noopener">${LAYOUT[id].path}</a>
-            <button type="button" class="ghost" data-new-round="${id}">새 라운드 시작</button>
-          </header>
-        </section>`).join("");
+      ids.map((id) => `<section class="game">${gameHead(id)}</section>`).join("");
     bindRoundButtons();
     $("loading").hidden = true;
     return;
@@ -152,16 +162,7 @@ function renderGameBlock(id, rounds) {
     return renderRound(id, r);
   }).join("");
 
-  return `
-    <section class="game">
-      <header class="game-head">
-        <h2>${GAMES[id].title}</h2>
-        <a class="url" href="${meta.path}" target="_blank" rel="noopener">${meta.path}</a>
-        <button type="button" class="ghost" data-new-round="${id}">새 라운드 시작</button>
-      </header>
-      ${summary}
-      ${body}
-    </section>`;
+  return `<section class="game" data-game="${id}">${gameHead(id)}${summary}${body}</section>`;
 }
 
 function renderRound(id, r) {
