@@ -2,10 +2,10 @@
 //
 // 게임 화면과 달리 여기서는 아무것도 쓰지 않습니다. 읽기만 합니다.
 
-import { GAMES } from "./config.js?v=12";
+import { GAMES } from "./config.js?v=13";
 import {
   refs, gameSettings, roundDocId, configured, fmt, reduceMotion
-} from "./shared/core.js?v=12";
+} from "./shared/core.js?v=13";
 import { getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // 허브는 다섯 게임을 한꺼번에 보여주므로 실시간 구독을 쓰면 읽기량이

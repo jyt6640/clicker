@@ -80,6 +80,16 @@ body {
 .ghost:hover { color: #fff; border-color: #444; }
 
 .loading { color: var(--dim); letter-spacing: 0.2em; padding: 2rem 0; }
+.load-error {
+  color: var(--accent);
+  font-size: 0.8rem;
+  line-height: 1.9;
+  padding: 0.9rem 1rem;
+  border: 1px solid #3a1512;
+  border-radius: 10px;
+  background: #140806;
+  margin-bottom: 1.25rem;
+}
 
 /* 게임 설정 편집 */
 .settings {

@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 보안 규칙이 합니다. 관리자 계정이 아니면 로그인 자체가
 // 되지 않고, 설정·정답 문서에는 쓰기도 막혀 있습니다.
 
-import { GAMES } from "../config.js?v=12";
+import { GAMES } from "../config.js?v=13";
 import {
   loadStats, configured, fmt, gameSettings, settingsRef, signInAdminEmail,
   answerId, adminDoc, listRounds, roundDocId, hintDocId, resetSettingsCache
-} from "../shared/core.js?v=12";
+} from "../shared/core.js?v=13";
 import { setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const $ = (id) => document.getElementById(id);
@@ -36,14 +36,47 @@ function cell(label, value) {
   return `<div class="cell"><span>${label}</span><b>${value}</b></div>`;
 }
 
+/** Firestore 오류를 화면에 쓸 문장으로 옮깁니다. */
+function explain(err) {
+  const code = err?.code || "";
+  if (code === "resource-exhausted") {
+    return "Firebase 무료 요금제의 하루 한도를 다 썼습니다. " +
+           "태평양시 자정에 초기화되며, 그전에 쓰려면 Blaze 요금제로 전환해야 합니다.";
+  }
+  if (code === "permission-denied") {
+    return "보안 규칙이 막고 있습니다. firestore.rules를 배포했는지 확인하세요.";
+  }
+  if (code === "unauthenticated") return "로그인이 풀렸습니다. 새로고침 후 다시 로그인하세요.";
+  return `읽지 못했습니다 (${code || err?.message || err}).`;
+}
+
 async function loadAll() {
   const games = $("games");
   $("loading").hidden = false;
   games.innerHTML = "";
-
-  const merged = await gameSettings();
-  const byGame = await listRounds();
   const ids = Object.keys(LAYOUT);
+
+  let merged, byGame;
+  try {
+    merged = await gameSettings();
+    byGame = await listRounds();
+  } catch (err) {
+    // 집계를 못 읽어도 화면이 멈추면 안 됩니다. 이유를 보여주고,
+    // 새 라운드 버튼은 남겨서 계속 조작할 수 있게 합니다.
+    console.error("[stats]", err);
+    games.innerHTML = `<p class="load-error">${explain(err)}</p>` +
+      ids.map((id) => `
+        <section class="game">
+          <header class="game-head">
+            <h2>${GAMES[id].title}</h2>
+            <a class="url" href="${LAYOUT[id].path}" target="_blank" rel="noopener">${LAYOUT[id].path}</a>
+            <button type="button" class="ghost" data-new-round="${id}">새 라운드 시작</button>
+          </header>
+        </section>`).join("");
+    bindRoundButtons();
+    $("loading").hidden = true;
+    return;
+  }
 
   // 진행 중인 회차는 아직 문서가 없을 수 있으므로 목록에 채워 넣습니다.
   for (const id of ids) {
@@ -78,12 +111,14 @@ async function loadAll() {
   });
 
   games.innerHTML = ids.map((id) => renderGameBlock(id, statsByGame[id] || [])).join("");
+  bindRoundButtons();
+  $("loading").hidden = true;
+}
 
+function bindRoundButtons() {
   document.querySelectorAll("[data-new-round]").forEach((btn) => {
     btn.addEventListener("click", () => newRound(btn.dataset.newRound));
   });
-
-  $("loading").hidden = true;
 }
 
 /** 한 게임의 전체 회차를 누적 집계와 함께 렌더합니다. */
@@ -111,7 +146,7 @@ function renderGameBlock(id, rounds) {
   const body = rounds.map((r) => {
     if (!r.ok) {
       return `<section class="round"><h3>${r.round}회차</h3>
-        <p class="note">데이터를 불러오지 못했습니다. 보안 규칙 배포를 확인하세요.</p>
+        <p class="note">${explain(r.error)}</p>
       </section>`;
     }
     return renderRound(id, r);
@@ -230,7 +265,7 @@ async function newRound(id) {
     loadAll();
   } catch (err) {
     console.error("[newRound]", err);
-    alert("회차를 올리지 못했습니다. 관리자 계정으로 로그인했는지 확인하세요.");
+    alert(`회차를 올리지 못했습니다.\n\n${explain(err)}`);
   }
 }
 
@@ -313,8 +348,7 @@ async function saveSettings() {
   } catch (err) {
     console.error("[save]", err);
     msg.className = "save-msg err";
-    msg.textContent =
-      "저장 실패 — firestore.rules의 ADMIN_UID에 아래 관리자 ID가 들어가 있는지 확인하세요.";
+    msg.textContent = `저장 실패 — ${explain(err)}`;
   }
 }
 
