@@ -219,13 +219,20 @@ begin
 
   select coalesce(sum(c.value), 0) into v_after from counters c where c.game_id = p_game;
 
-  -- 구간별 도달 시각
+  -- 구간별 도달 시각.
+  -- UPDATE ... FROM (values ...) 로 쓰면 대상 행이 한 번만 갱신되어 한
+  -- 호출에 구간 하나씩만 기록됩니다. 한 번에 여러 구간을 넘길 수 있으므로
+  -- 해당하는 구간을 모두 모아 한 번에 합칩니다.
   if v_target is not null then
-    update games g set milestones = g.milestones || jsonb_build_object(k.pct, now())
-      from (values (25, 0.25), (50, 0.50), (75, 0.75), (100, 1.0)) as k(pct, ratio)
-     where g.id = p_game
-       and v_after >= v_target * k.ratio
-       and not (g.milestones ? k.pct::text);
+    update games g
+       set milestones = g.milestones || coalesce((
+             select jsonb_object_agg(k.pct::text, now())
+               from (values (25, 0.25), (50, 0.50), (75, 0.75), (100, 1.0))
+                      as k(pct, ratio)
+              where v_after >= v_target * k.ratio
+                and not (g.milestones ? k.pct::text)
+           ), '{}'::jsonb)
+     where g.id = p_game;
   end if;
 
   -- 목표 도달 처리
