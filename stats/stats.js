@@ -4,12 +4,11 @@
 // 이메일 계정 로그인과 보안 규칙이 합니다. 관리자 계정이 아니면 로그인 자체가
 // 되지 않고, 설정·정답 문서에는 쓰기도 막혀 있습니다.
 
-import { GAMES } from "../config.js?v=13";
+import { GAMES } from "../config.js?v=14";
 import {
-  loadStats, configured, fmt, gameSettings, settingsRef, signInAdminEmail,
-  answerId, adminDoc, listRounds, roundDocId, hintDocId, resetSettingsCache
-} from "../shared/core.js?v=13";
-import { setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  loadStats, configured, fmt, gameSettings, saveSettings, signInAdminEmail,
+  setLockAnswer, setPayload, listRounds, roundDocId, resetSettingsCache
+} from "../shared/core.js?v=14";
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,18 +35,19 @@ function cell(label, value) {
   return `<div class="cell"><span>${label}</span><b>${value}</b></div>`;
 }
 
-/** Firestore 오류를 화면에 쓸 문장으로 옮깁니다. */
+/** Supabase 오류를 화면에 쓸 문장으로 옮깁니다. */
 function explain(err) {
   const code = err?.code || "";
-  if (code === "resource-exhausted") {
-    return "Firebase 무료 요금제의 하루 한도를 다 썼습니다. " +
-           "태평양시 자정에 초기화되며, 그전에 쓰려면 Blaze 요금제로 전환해야 합니다.";
+  const msg = err?.message || "";
+  if (code === "42P01" || /does not exist/i.test(msg)) {
+    return "테이블이 없습니다. Supabase SQL Editor에서 supabase/schema.sql을 실행하세요.";
   }
-  if (code === "permission-denied") {
-    return "보안 규칙이 막고 있습니다. firestore.rules를 배포했는지 확인하세요.";
+  if (code === "42501" || /permission denied|row-level security/i.test(msg)) {
+    return "권한이 없습니다. 관리자 계정으로 로그인했는지, schema.sql의 is_admin() 이메일이 맞는지 확인하세요.";
   }
-  if (code === "unauthenticated") return "로그인이 풀렸습니다. 새로고침 후 다시 로그인하세요.";
-  return `읽지 못했습니다 (${code || err?.message || err}).`;
+  if (/admin only/i.test(msg)) return "관리자 계정만 바꿀 수 있습니다.";
+  if (/JWT|not signed in/i.test(msg)) return "로그인이 풀렸습니다. 새로고침 후 다시 로그인하세요.";
+  return `처리하지 못했습니다 (${code || msg || err}).`;
 }
 
 async function loadAll() {
@@ -260,8 +260,7 @@ async function newRound(id) {
 
   const merged = await gameSettings();
   try {
-    await setDoc(settingsRef(), { [id]: { ...merged[id], round: next } }, { merge: true });
-    resetSettingsCache();
+    await saveSettings({ ...merged, [id]: { ...merged[id], round: next } });
     loadAll();
   } catch (err) {
     console.error("[newRound]", err);
@@ -291,7 +290,7 @@ async function fillSettings() {
   }
 }
 
-async function saveSettings() {
+async function onSave() {
   const msg = $("save-msg");
   msg.className = "save-msg";
   msg.textContent = "저장 중…";
@@ -305,43 +304,32 @@ async function saveSettings() {
     payload[game][key] = v;
   }
 
-  // 자물쇠 정답은 어디에도 평문으로 저장하지 않습니다. 정답의 해시를 문서
-  // id로 쓴 빈 문서를 만들 뿐이고, 힌트 숫자는 따로 잠긴 문서에 넣습니다.
   const answer = $("set-lock-answer").value.trim();
-  const secretWrites = [];
-  if (answer) {
-    if (!/^\d+$/.test(answer)) {
-      msg.className = "save-msg err";
-      msg.textContent = "자물쇠 정답은 숫자만 입력하세요.";
-      return;
-    }
-    const salt = merged.lock.answerSalt;
-    const lockRound = roundDocId("lock", merged.lock.round || 1);
-    secretWrites.push(
-      setDoc(adminDoc("lockAnswers", await answerId(salt, answer, lockRound)), { ok: true })
-    );
-    for (let i = 0; i < answer.length; i++) {
-      secretWrites.push(
-        setDoc(adminDoc("lockHints", hintDocId(lockRound, i + 1)), { d: answer[i] })
-      );
-    }
-    payload.lock = payload.lock || { ...merged.lock };
-    payload.lock.digits = answer.length;
-    payload.lock.answerSalt = salt;
+  if (answer && !/^\d+$/.test(answer)) {
+    msg.className = "save-msg err";
+    msg.textContent = "자물쇠 정답은 숫자만 입력하세요.";
+    return;
   }
-
-  // 얼음 승자 문구도 코드가 아니라 서버에 둡니다. 게임이 끝나기 전에는
-  // 규칙이 읽기를 막습니다.
   const meltText = $("set-melt-payload").value.trim();
-  if (meltText) {
-    const meltRound = roundDocId("melt", merged.melt.round || 1);
-    secretWrites.push(setDoc(adminDoc("payloads", meltRound), { text: meltText }));
-  }
 
   try {
-    await Promise.all([setDoc(settingsRef(), payload, { merge: true }), ...secretWrites]);
-    msg.className = "save-msg ok";
+    if (answer) {
+      payload.lock = payload.lock || { ...merged.lock };
+      payload.lock.digits = answer.length;
+    }
+    await saveSettings(payload);
+
+    // 정답과 문구는 서버 함수를 통해서만 들어갑니다. 평문은 브라우저를
+    // 떠나는 순간부터 서버 안에만 존재합니다.
+    if (answer) {
+      await setLockAnswer(roundDocId("lock", payload.lock?.round || merged.lock.round || 1), answer);
+    }
+    if (meltText) {
+      await setPayload(roundDocId("melt", payload.melt?.round || merged.melt.round || 1), meltText);
+    }
+
     resetSettingsCache();
+    msg.className = "save-msg ok";
     msg.textContent = "저장했습니다. 참여자는 새로고침하면 반영됩니다.";
     $("set-lock-answer").value = "";
     $("set-melt-payload").value = "";
@@ -360,7 +348,7 @@ function openPanel(email) {
   loadAll();
 }
 
-$("save").addEventListener("click", saveSettings);
+$("save").addEventListener("click", onSave);
 
 const AUTH_ERRORS = {
   "auth/invalid-credential": "이메일이나 비밀번호가 맞지 않습니다.",

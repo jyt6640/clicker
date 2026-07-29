@@ -4,8 +4,8 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "../shared/core.js?v=13";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=13";
+} from "../shared/core.js?v=14";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=14";
 
 const GAME_ID = "tug";
 let winBy = 3000;                 // 관리자 설정을 읽어 덮어씁니다.
@@ -59,21 +59,17 @@ async function main() {
   const session = await createSession({
     gameId: GAME_ID,
     target: null,                 // 승부는 격차로 판정하므로 상한이 없습니다.
-    shardPrefix: myTeam === LEFT ? "L" : "R",
+    bucket: myTeam,
     onStatus: statusHandler(),
-    onShards: (shards) => {
-      left = 0;
-      right = 0;
-      for (const [id, v] of shards) {
-        if (id.startsWith("L")) left += v;
-        else if (id.startsWith("R")) right += v;
-      }
+    onBuckets: (b) => {
+      left = b.get(LEFT) || 0;
+      right = b.get(RIGHT) || 0;
       renderTeams();
 
       const diff = left - right;
-      if (Math.abs(diff) >= winBy) {
+      if (Math.abs(diff) >= winBy && !session.completed) {
         const winner = diff > 0 ? LEFT : RIGHT;
-        session.markComplete(winner === myTeam, { winner });
+        session.finishGame(winner === myTeam, winner);
       }
     },
     onTotal: (total) => {

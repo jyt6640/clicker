@@ -6,8 +6,8 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "../shared/core.js?v=13";
-import { statusHandler, showDone, showSetupNeeded } from "../shared/ui.js?v=13";
+} from "../shared/core.js?v=14";
+import { statusHandler, showDone, showSetupNeeded } from "../shared/ui.js?v=14";
 
 const GAME_ID = "button";
 let resetSeconds = 15;
@@ -69,12 +69,11 @@ async function main() {
     target: null,
     onStatus: statusHandler(),
     onEvent: (data) => {
-      // 이벤트 문서가 막 만들어졌다면 타이머 기준점을 심어둡니다.
-      if (!data.lastPress) {
-        session.patchGame({ lastPress: Date.now(), lastPresser: null });
-        return;
-      }
-      const byOther = data.lastPresser !== lastPresser || data.lastPress !== lastPress;
+      // 아직 아무도 안 눌렀다면 시작 시각을 기준점으로 씁니다.
+      const stamp = data.lastPress || data.startTime;
+      if (!stamp) return;
+      const byOther = data.lastPresser !== lastPresser || stamp !== lastPress;
+      data = { ...data, lastPress: stamp };
       lastPress = data.lastPress;
       lastPresser = data.lastPresser;
 
@@ -106,7 +105,7 @@ async function main() {
     renderClock();
     if (remaining() <= 0) {
       finished = true;
-      session.markComplete(lastPresser === myUid, { winner: lastPresser || null });
+      session.finishGame(lastPresser === myUid, lastPresser || null);
     }
   }, 100);
 
@@ -121,7 +120,7 @@ async function main() {
     lastPress = Date.now();
     lastPresser = myUid;
     renderClock();
-    session.patchGame({ lastPress: lastPress, lastPresser: myUid });
+    session.pressButton();
     if (navigator.vibrate) { try { navigator.vibrate(10); } catch (_) {} }
   }
 

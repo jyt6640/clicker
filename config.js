@@ -26,16 +26,9 @@ export const GAMES = {
   lock: {
     title: "자물쇠",
     digits: 3,
-    // 정답은 이 파일에도, 브라우저로 내려오는 어떤 응답에도 들어 있지
-    // 않습니다. 정답의 해시를 문서 id로 쓴 lockAnswers 문서를 열어보는
-    // 방식으로만 확인합니다(규칙에서 get만 허용, list 금지).
-    //
-    // 정답은 /stats/ 관리자 화면에서 설정합니다. 설정하기 전까지 자물쇠는
-    // "준비 중"으로 표시됩니다.
-    //
-    // ※ 세 자리는 경우의 수가 1,000개뿐이라, 작정하고 1,000번 요청을
-    //    보내면 뚫립니다. 자릿수를 늘릴수록 강해집니다.
-    answerSalt: "wootecho-lock-2026",
+    // 정답은 이 파일에도, 브라우저로 내려오는 어떤 응답에도 없습니다.
+    // 서버 함수가 대조만 해주고 결과(참/거짓)만 돌려줍니다.
+    // 정답은 /stats/ 관리자 화면에서 설정합니다.
     // 전체 시도 횟수가 이 값을 넘을 때마다 왼쪽부터 한 자리씩 공개됩니다.
     hintEvery: 1000,
     // 힌트 목적의 연타를 막는 시도 간 쿨다운(ms).
@@ -71,29 +64,24 @@ export const GAMES = {
 //       정확한 참여 수치는 통계 페이지(Firestore)가 정본입니다.
 export const GA_MEASUREMENT_ID = "G-GS7JQCYXCX";
 
-// 4) Firebase 웹 앱 설정.
-//    Firebase 콘솔 > 프로젝트 설정 > 내 앱 > SDK 설정 및 구성.
-export const firebaseConfig = {
-  apiKey: "AIzaSyAEXF185njXPlQGn-MeMjkVpQezcdOUJwA",
-  authDomain: "clicker-2f0d7.firebaseapp.com",
-  projectId: "clicker-2f0d7",
-  storageBucket: "clicker-2f0d7.firebasestorage.app",
-  messagingSenderId: "397733817124",
-  appId: "1:397733817124:web:497ee6512732cb8b1b21b1",
-  measurementId: "G-GS7JQCYXCX",
+// 4) Supabase 설정.
+//    Supabase 대시보드 > Project Settings > Data API 에서
+//    Project URL과 anon public key를 복사해 넣으세요.
+//    anon key는 공개돼도 됩니다. 실제 접근 통제는 행 수준 보안 정책과
+//    서버 함수가 합니다 (supabase/schema.sql).
+export const supabaseConfig = {
+  url: "",
+  anonKey: ""
 };
 
 // ==========================================================================
 // 아래는 건드리지 않아도 됩니다.
 // ==========================================================================
 
-// 카운터 분산에 사용할 샤드 개수. 이벤트 도중에는 바꾸지 마세요.
-export const SHARD_COUNT = 20;
-
 // 큐에 쌓인 입력을 서버로 밀어 넣는 주기(ms).
 //
-// 이 값이 Firestore 사용량을 좌우합니다. 접속자 전원이 서로의 샤드를
-// 구독하므로 읽기량은 대략 (쓰기 횟수 x 접속자 수)입니다. 주기를 늘리면
-// 한 번에 더 많은 입력을 묶어 보내므로 쓰기도 읽기도 그만큼 줄어듭니다.
-// 대신 화면에 숫자가 반영되기까지 그만큼 늦어집니다.
-export const FLUSH_INTERVAL_MS = 1500;
+// 이 값이 사용량을 좌우합니다. 접속자 전원이 카운터 변경을 실시간으로
+// 받으므로 실시간 메시지 수는 대략 (쓰기 횟수 x 접속자 수)입니다.
+// 주기를 늘리면 입력을 더 많이 묶어 보내 그만큼 줄어듭니다.
+// 대신 화면에 숫자가 반영되기까지 늦어집니다.
+export const FLUSH_INTERVAL_MS = 1000;

@@ -4,14 +4,13 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
-  checkAnswer, getHint, roundDocId, currentRound
-} from "../shared/core.js?v=13";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=13";
+  checkAnswer, getHint
+} from "../shared/core.js?v=14";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=14";
 
 const GAME_ID = "lock";
 // 관리자 설정을 읽어 덮어씁니다.
 let digits = 3;
-let answerSalt = "";
 let hintEvery = 1000;
 let cooldownMs = 2000;
 // 이번 회차의 문서 id. main()에서 채웁니다.
@@ -148,8 +147,8 @@ async function updateHint(attempts, session) {
   if (unlocked <= renderedHintFor) return;
   renderedHintFor = unlocked;
 
-  // 공개 단계를 서버에 기록해야 그 자리 힌트를 읽을 수 있게 됩니다.
-  await session.patchGame({ hintLevel: unlocked });
+  // 공개 단계를 서버에 올려야 그 자리 힌트를 읽을 수 있게 됩니다.
+  await session.raiseHintLevel(unlocked);
 
   for (let i = known.length; i < unlocked; i++) {
     const d = await getHint(roundId, i + 1);
@@ -171,11 +170,8 @@ async function main() {
 
   const cfg = (await gameSettings())[GAME_ID];
   digits = cfg.digits;
-  answerSalt = cfg.answerSalt;
   hintEvery = cfg.hintEvery;
   cooldownMs = cfg.cooldownMs;
-
-  roundId = roundDocId(GAME_ID, await currentRound(GAME_ID));
 
   elHint.textContent = new Array(digits).fill("?").join(" ");
   buildDials();
@@ -193,6 +189,7 @@ async function main() {
       if (session) updateHint(attempts, session);
     }
   });
+  roundId = session.roundId;
   updateHint(session.total, session);
 
   let cooling = false;
@@ -217,9 +214,8 @@ async function main() {
       }
     }, 100);
 
-    if (await checkAnswer(answerSalt, guess, roundId)) {
+    if (await checkAnswer(roundId, guess)) {
       clearInterval(tick);
-      await session.patchUser({ solved: true, solvedAt: Date.now() });
       elShackle.classList.add("open");
       if (navigator.vibrate) { try { navigator.vibrate([12, 40, 24]); } catch (_) {} }
       setTimeout(() => showDone({ title: "🔓", gameId: GAME_ID }), 700);

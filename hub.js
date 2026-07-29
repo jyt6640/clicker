@@ -2,11 +2,10 @@
 //
 // 게임 화면과 달리 여기서는 아무것도 쓰지 않습니다. 읽기만 합니다.
 
-import { GAMES } from "./config.js?v=13";
+import { GAMES } from "./config.js?v=14";
 import {
-  refs, gameSettings, roundDocId, configured, fmt, reduceMotion
-} from "./shared/core.js?v=13";
-import { getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  readTotals, gameSettings, roundDocId, configured, fmt, reduceMotion
+} from "./shared/core.js?v=14";
 
 // 허브는 다섯 게임을 한꺼번에 보여주므로 실시간 구독을 쓰면 읽기량이
 // 게임 화면의 다섯 배가 됩니다. Firestore 읽기는 과금 대상이라, 여기서는
@@ -119,13 +118,8 @@ function watchCounts(settings) {
   async function readOne(c) {
     const cfg = settings[c.id];
     const target = cfg.target || null;
-    const r = refs(roundDocId(c.id, cfg.round || 1));
-
-    const [shardSnap, gameSnap] = await Promise.all([getDocs(r.shards), getDoc(r.game)]);
-
-    let raw = 0;
-    shardSnap.forEach((d) => { raw += d.data().c || 0; });
-    const shown = target ? Math.min(raw, target) : raw;
+    const { total: shown, completed } =
+      await readTotals(roundDocId(c.id, cfg.round || 1), target);
 
     const elCount = $(`count-${c.id}`);
     if (elCount.textContent !== fmt(shown)) {
@@ -134,8 +128,7 @@ function watchCounts(settings) {
     }
     const elBar = $(`bar-${c.id}`);
     if (elBar) elBar.style.width = `${Math.min(shown / target, 1) * 100}%`;
-    $(`done-${c.id}`).hidden =
-      !(gameSnap.exists() && gameSnap.data().status === "completed");
+    $(`done-${c.id}`).hidden = !completed;
 
     totals.set(c.id, shown);
   }
