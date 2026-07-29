@@ -19,7 +19,7 @@ import {
 
 import {
   firebaseConfig, GA_MEASUREMENT_ID, SHARD_COUNT, FLUSH_INTERVAL_MS, GAMES
-} from "../config.js?v=11";
+} from "../config.js?v=12";
 
 export const configured = Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
 

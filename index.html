@@ -5,37 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#050505">
 <meta name="robots" content="noindex">
-<title>다섯 개의 버튼</title>
+<title>와글</title>
+<meta property="og:title" content="와글">
+<meta property="og:description" content="지금 몇 명이 같이 누르고 있는지는 아무도 모릅니다.">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./shared/base.css?v=11">
-<link rel="stylesheet" href="./hub.css?v=11">
+<link rel="stylesheet" href="./shared/base.css?v=12">
+<link rel="stylesheet" href="./hub.css?v=12">
 </head>
 <body class="hub">
 <script>document.body.classList.add("js");</script>
 
 <!-- 첫 화면 -->
 <section class="hero">
-  <h1 class="hero-title">
-    <span>다섯</span> <span>개의</span> <span>버튼</span>
-  </h1>
-  <p class="hero-sub">아무 설명 없이, 여럿이 동시에.</p>
+  <h1 class="hero-title"><span>와</span><span>글</span></h1>
+  <p class="hero-sub">혼자서는 아무것도 안 끝납니다.</p>
+
   <div class="hero-total mono tabular">
     <b id="grand-total">0</b>
-    <span>지금까지 함께 누른 횟수</span>
+    <span>지금까지 눌린 횟수</span>
   </div>
+
+  <p class="hero-jab">
+    지난번엔 <b>한 명이 전체의 70.6%</b>를 가져갔습니다.<br>
+    이번에도 그럴 것 같으면, 내려가지 마세요.
+  </p>
+
   <div class="scroll-cue" aria-hidden="true"><span></span></div>
 </section>
 
 <main id="games"></main>
 
 <footer class="foot">
-  <p>이름도 설명도 없습니다. 숫자만 보고 하시면 됩니다.</p>
-  <a class="foot-link" href="./stats/">제작자 통계</a>
+  <p>다섯 개가 전부 끝나면 아무 일도 일어나지 않습니다.</p>
+  <a class="foot-link" href="./stats/">기록</a>
 </footer>
 
-<script type="module" src="./hub.js?v=11"></script>
+<script type="module" src="./hub.js?v=12"></script>
 </body>
 </html>

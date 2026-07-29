@@ -2,10 +2,10 @@
 //
 // 게임 화면과 달리 여기서는 아무것도 쓰지 않습니다. 읽기만 합니다.
 
-import { GAMES } from "./config.js?v=11";
+import { GAMES } from "./config.js?v=12";
 import {
   refs, gameSettings, roundDocId, configured, fmt, reduceMotion
-} from "./shared/core.js?v=11";
+} from "./shared/core.js?v=12";
 import { getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // 허브는 다섯 게임을 한꺼번에 보여주므로 실시간 구독을 쓰면 읽기량이
@@ -15,31 +15,40 @@ const POLL_MS = 15000;
 
 const CARDS = [
   {
-    id: "cylinder", path: "./cylinder/", unit: "클릭",
-    line: "누를수록 원통에 금이 갑니다.\n다 같이 부수면 끝납니다.",
+    id: "cylinder", path: "./cylinder/", unit: "번",
+    line: "혼자 누르면 아무 일도 안 생깁니다.",
     tone: "#ffffff", glow: "rgba(255,255,255,0.14)"
   },
   {
-    id: "melt", path: "./melt/", unit: "마찰",
-    line: "문지르면 얼음이 녹습니다.\n마지막 한 명만 무언가를 봅니다.",
+    id: "melt", path: "./melt/", unit: "번",
+    line: "안에 뭐가 들었는지는\n다 녹여야 알 수 있습니다.",
     tone: "#8fd3f4", glow: "rgba(143,211,244,0.16)"
   },
   {
-    id: "lock", path: "./lock/", unit: "시도",
-    line: "세 자리를 맞히면 열립니다.\n모두의 시도가 쌓이면 한 자리씩 드러납니다.",
+    id: "lock", path: "./lock/", unit: "번",
+    line: "세 자리입니다.\n천 번 틀릴 때마다 한 자리씩 흘립니다.",
     tone: "#e8c07d", glow: "rgba(232,192,125,0.16)"
   },
   {
-    id: "tug", path: "./tug/", unit: "당기기",
-    line: "들어가는 순간 편이 정해집니다.\n줄을 끌어오세요.",
+    id: "tug", path: "./tug/", unit: "번",
+    line: "들어오는 순간 편이 정해집니다.\n고를 수 없습니다.",
     tone: "#7f9cff", glow: "rgba(127,156,255,0.18)"
   },
   {
-    id: "button", path: "./button/", unit: "누름",
-    line: "누르면 시간이 되돌아갑니다.\n다섯 번뿐입니다.",
+    id: "button", path: "./button/", unit: "번",
+    line: "다섯 번뿐입니다.\n다 쓰면 지켜보는 것 말고 할 게 없습니다.",
     tone: "#ff6b52", glow: "rgba(255,107,82,0.18)"
   }
 ];
+
+// 카드마다 다르게 도발합니다.
+const TEASE = {
+  cylinder: "부술 수 있을 것 같습니까",
+  melt: "마지막 한 명만 봅니다",
+  lock: "아직 아무도 못 열었습니다",
+  tug: "지는 쪽은 아무것도 없습니다",
+  button: "마지막에 누른 사람만 남습니다"
+};
 
 const $ = (id) => document.getElementById(id);
 const elGames = $("games");
@@ -69,11 +78,12 @@ function buildCards(settings) {
                style="--tone:${c.tone};--glow:${c.glow}">
         <div class="card-no reveal">0${i + 1}${cfg.round > 1 ? ` · ${cfg.round}회차` : ""}</div>
         <h2 class="reveal">${GAMES[c.id].title}</h2>
+        <div class="tease reveal">${TEASE[c.id]}</div>
         <p class="reveal">${c.line.replace(/\n/g, "<br>")}</p>
         <div class="card-count reveal tabular" id="count-${c.id}">0</div>
-        <div class="card-unit reveal">${target ? `${fmt(target)} ${c.unit} 중` : `${c.unit} 누적`}</div>
+        <div class="card-unit reveal">${target ? `${fmt(target)} ${c.unit} 중` : `누적 ${c.unit}`}</div>
         ${target ? `<div class="bar reveal"><i id="bar-${c.id}"></i></div>` : ""}
-        <a class="enter reveal" href="${c.path}">들어가기</a>
+        <a class="enter reveal" href="${c.path}">할래요</a>
         <div class="card-done reveal" id="done-${c.id}" hidden>끝났습니다</div>
       </section>`;
   }).join("");

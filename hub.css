@@ -41,8 +41,8 @@ body.hub {
   transform: translateY(0.4em);
   animation: rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
-.hero-title span:nth-child(2) { animation-delay: 0.12s; }
-.hero-title span:nth-child(3) { animation-delay: 0.24s; }
+.hero-title { font-size: clamp(3.4rem, 22vw, 9rem); letter-spacing: -0.04em; }
+.hero-title span:nth-child(2) { animation-delay: 0.14s; }
 
 @keyframes rise {
   to { opacity: 1; transform: translateY(0); }
@@ -76,6 +76,17 @@ body.hub {
   letter-spacing: 0.28em;
   color: #444;
 }
+
+/* 도발 한 줄 */
+.hero-jab {
+  margin-top: 2rem;
+  color: #4a4a4a;
+  font-size: clamp(0.78rem, 3.2vw, 0.9rem);
+  line-height: 2;
+  opacity: 0;
+  animation: rise 0.9s 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.hero-jab b { color: var(--accent); font-weight: 700; }
 
 /* 아래로 내려가라는 신호 */
 .scroll-cue {
@@ -131,6 +142,13 @@ body.hub {
   font-size: 0.72rem;
   letter-spacing: 0.4em;
   color: #3a3a3a;
+}
+
+.tease {
+  font-size: clamp(0.78rem, 3.2vw, 0.92rem);
+  letter-spacing: 0.16em;
+  color: var(--tone);
+  opacity: 0.85;
 }
 
 .card h2 {
@@ -237,7 +255,9 @@ body.hub {
 .foot-link:hover { color: #666; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-title span, .hero-sub, .hero-total { animation: none; opacity: 1; transform: none; }
+  .hero-title span, .hero-sub, .hero-total, .hero-jab {
+    animation: none; opacity: 1; transform: none;
+  }
   .scroll-cue span { animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .card::before { transition: none; }

@@ -1,7 +1,9 @@
-# clicker
+# 와글 (wagle)
 
 설명 없이 링크만 던지는 실시간 공동 참여 이벤트 모음. 다섯 개의 게임이
 각각 독립된 링크와 독립된 통계를 가집니다.
+
+배포 주소: <https://jyt6640.github.io/wagle/>
 
 GitHub Pages(정적 호스팅) + Firebase Firestore(실시간 공유 데이터) 조합입니다.
 빌드 도구 없이 순수 HTML/CSS/JS이며, 저장소를 그대로 배포합니다.
