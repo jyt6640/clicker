@@ -5,8 +5,8 @@
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
   getPayload
-} from "../shared/core.js?v=15";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=15";
+} from "../shared/core.js?v=16";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=16";
 
 const GAME_ID = "melt";
 let target = 50000;               // 관리자 설정을 읽어 덮어씁니다.

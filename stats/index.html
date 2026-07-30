@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared/base.css?v=15">
-<link rel="stylesheet" href="./stats.css?v=15">
+<link rel="stylesheet" href="../shared/base.css?v=16">
+<link rel="stylesheet" href="./stats.css?v=16">
 </head>
 <body>
 
@@ -24,13 +24,13 @@
   </form>
   <p id="gate-error" class="gate-error" hidden></p>
   <p class="gate-note">
-    Firebase 콘솔 &gt; Authentication 에서 만든 관리자 계정으로 로그인합니다.
+    Supabase 대시보드 &gt; Authentication &gt; Users 에서 만든 관리자 계정으로 로그인합니다.
   </p>
 </div>
 
 <div id="panel" class="panel" hidden>
   <header class="top">
-    <h1>제작자 통계 <span class="build">v15</span></h1>
+    <h1>제작자 통계 <span class="build">v16</span></h1>
     <button id="refresh" type="button" class="ghost">새로고침</button>
   </header>
 
@@ -71,7 +71,7 @@
   <div id="games"></div>
 
   <p class="note">
-    수치의 정본은 이 화면(Firestore)입니다. 구글 애널리틱스는 광고 차단기
+    수치의 정본은 이 화면(Supabase)입니다. 구글 애널리틱스는 광고 차단기
     사용자가 빠지므로 유입 경로 참고용으로만 보세요.
     <br>
     데이터를 지우는 기능은 없습니다. 대신 게임마다 <b>새 라운드 시작</b>을 누르면
@@ -80,6 +80,6 @@
   </p>
 </div>
 
-<script type="module" src="./stats.js?v=15"></script>
+<script type="module" src="./stats.js?v=16"></script>
 </body>
 </html>

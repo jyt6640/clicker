@@ -61,12 +61,13 @@ export const GAMES = {
 //    ※ 클릭 하나하나를 GA로 보내지 않습니다. 수만 건을 개별 이벤트로
 //       보내면 수집 한도에 걸리고 리포트가 망가집니다.
 //    ※ 광고 차단기를 쓰는 사용자는 GA에 잡히지 않습니다.
-//       정확한 참여 수치는 통계 페이지(Firestore)가 정본입니다.
+//       정확한 참여 수치는 통계 페이지(Supabase)가 정본입니다.
 export const GA_MEASUREMENT_ID = "G-GS7JQCYXCX";
 
 // 4) Supabase 설정.
-//    Supabase 대시보드 > Project Settings > Data API 에서
-//    Project URL과 anon public key를 복사해 넣으세요.
+//    Project URL: Supabase 대시보드 > Project Settings > Data API
+//    키:          Supabase 대시보드 > Project Settings > API Keys
+//                 (Publishable key 또는 Legacy 탭의 anon public)
 //    anon key는 공개돼도 됩니다. 실제 접근 통제는 행 수준 보안 정책과
 //    서버 함수가 합니다 (supabase/schema.sql).
 export const supabaseConfig = {

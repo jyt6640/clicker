@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 행 수준 보안 정책이 합니다. 관리자 계정이 아니면 로그인
 // 자체가 되지 않고, 설정·정답은 서버 함수가 관리자만 통과시킵니다.
 
-import { GAMES } from "../config.js?v=15";
+import { GAMES } from "../config.js?v=16";
 import {
   loadStats, configured, fmt, gameSettings, saveSettings, signInAdminEmail,
   setLockAnswer, setPayload, listRounds, roundDocId, resetSettingsCache
-} from "../shared/core.js?v=15";
+} from "../shared/core.js?v=16";
 
 const $ = (id) => document.getElementById(id);
 
@@ -293,15 +293,24 @@ function openPanel(email) {
 
 $("save").addEventListener("click", onSave);
 
+// Supabase가 돌려주는 코드입니다. Firebase의 auth/* 코드와는 전혀 다릅니다.
 const AUTH_ERRORS = {
-  "auth/invalid-credential": "이메일이나 비밀번호가 맞지 않습니다.",
-  "auth/invalid-email": "이메일 형식이 올바르지 않습니다.",
-  "auth/user-not-found": "그런 계정이 없습니다. Firebase 콘솔에서 만들어주세요.",
-  "auth/wrong-password": "비밀번호가 맞지 않습니다.",
-  "auth/too-many-requests": "시도가 너무 많습니다. 잠시 후 다시 해주세요.",
-  "auth/operation-not-allowed":
-    "Firebase 콘솔 > Authentication 에서 이메일/비밀번호 로그인을 켜주세요."
+  invalid_credentials: "이메일이나 비밀번호가 맞지 않습니다.",
+  email_not_confirmed:
+    "계정이 확인되지 않았습니다. Supabase > Authentication > Users 에서 해당 계정을 확인 처리하세요.",
+  user_not_found: "그런 계정이 없습니다. Supabase > Authentication > Users 에서 추가하세요.",
+  validation_failed: "이메일 형식이 올바르지 않습니다.",
+  over_request_rate_limit: "시도가 너무 많습니다. 잠시 후 다시 해주세요.",
+  email_provider_disabled:
+    "Supabase > Authentication > Providers 에서 이메일 로그인을 켜주세요."
 };
+
+function loginError(err) {
+  const known = AUTH_ERRORS[err?.code];
+  if (known) return known;
+  // 코드가 없거나 처음 보는 값이면 서버 문구를 그대로 보여줍니다.
+  return err?.message || "로그인에 실패했습니다.";
+}
 
 $("gate-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -316,7 +325,7 @@ $("gate-form").addEventListener("submit", async (e) => {
   } catch (ex) {
     console.error("[login]", ex);
     err.hidden = false;
-    err.textContent = AUTH_ERRORS[ex.code] || `로그인 실패 (${ex.code || ex.message})`;
+    err.textContent = loginError(ex);
   }
 });
 
@@ -324,5 +333,5 @@ $("refresh").addEventListener("click", loadAll);
 
 if (!configured) {
   $("gate").innerHTML =
-    "<h1>설정이 필요합니다</h1><p class='note'><code>config.js</code>의 <code>firebaseConfig</code>를 채워주세요.</p>";
+    "<h1>설정이 필요합니다</h1><p class='note'><code>config.js</code>의 <code>supabaseConfig</code>를 채워주세요.</p>";
 }
