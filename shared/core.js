@@ -11,7 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 import {
   supabaseConfig, GA_MEASUREMENT_ID, FLUSH_INTERVAL_MS, GAMES
-} from "../config.js?v=23";
+} from "../config.js?v=24";
 
 export const configured =
   Boolean(supabaseConfig.url && supabaseConfig.anonKey);
@@ -438,6 +438,16 @@ export async function listRounds() {
   }
   for (const rounds of Object.values(byGame)) rounds.sort((a, b) => b - a);
   return byGame;
+}
+
+/**
+ * 모든 게임 · 모든 회차의 카운터를 통째로 더합니다.
+ * 목표치로 자르지 않습니다 — 지난 회차까지 실제로 눌린 횟수 그대로입니다.
+ */
+export async function readAllTimeTotal() {
+  const { data, error } = await sb().from("counters").select("value");
+  if (error) { console.error("[allTime]", error); return null; }
+  return (data || []).reduce((a, c) => a + Number(c.value), 0);
 }
 
 /** 허브에서 쓰는 가벼운 읽기 */

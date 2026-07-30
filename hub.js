@@ -2,10 +2,11 @@
 //
 // 게임 화면과 달리 여기서는 아무것도 쓰지 않습니다. 읽기만 합니다.
 
-import { GAMES } from "./config.js?v=23";
+import { GAMES } from "./config.js?v=24";
 import {
-  readTotals, gameSettings, roundDocId, configured, fmt, reduceMotion
-} from "./shared/core.js?v=23";
+  readTotals, readAllTimeTotal, gameSettings, roundDocId, configured, fmt,
+  reduceMotion
+} from "./shared/core.js?v=24";
 
 // 허브는 다섯 게임을 한꺼번에 보여주므로 실시간 구독을 쓰면 읽기량이
 // 게임 화면의 다섯 배가 됩니다. 실시간 메시지도 사용량이라, 여기서는
@@ -53,17 +54,20 @@ const $ = (id) => document.getElementById(id);
 const elGames = $("games");
 const elGrand = $("grand-total");
 
-const totals = new Map();
-
 function bump(el) {
   if (reduceMotion) return;
   el.classList.add("pop");
   setTimeout(() => el.classList.remove("pop"), 110);
 }
 
-function renderGrand() {
-  let sum = 0;
-  for (const v of totals.values()) sum += v;
+/**
+ * 히어로의 숫자는 다섯 게임 전부, 지난 회차까지 합친 값입니다.
+ * 카드의 숫자(현재 회차, 목표치로 클램프)와는 다른 값이라 따로 읽습니다.
+ */
+async function renderGrand() {
+  const sum = await readAllTimeTotal();
+  if (sum === null) return;
+  if (elGrand.textContent === fmt(sum)) return;
   elGrand.textContent = fmt(sum);
   bump(elGrand);
 }
@@ -130,17 +134,15 @@ function watchCounts(settings) {
     if (elBar) elBar.style.width = `${Math.min(shown / target, 1) * 100}%`;
     $(`done-${c.id}`).hidden = !completed;
 
-    totals.set(c.id, shown);
   }
 
   async function readAll() {
     // 보이지 않는 탭에서는 읽지 않습니다.
     if (document.hidden) return;
-    const results = await Promise.allSettled(CARDS.map(readOne));
+    const results = await Promise.allSettled([...CARDS.map(readOne), renderGrand()]);
     results.forEach((r, i) => {
-      if (r.status === "rejected") console.error(`[hub:${CARDS[i].id}]`, r.reason);
+      if (r.status === "rejected") console.error(`[hub:${CARDS[i]?.id ?? "total"}]`, r.reason);
     });
-    renderGrand();
   }
 
   readAll();
