@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 행 수준 보안 정책이 합니다. 관리자 계정이 아니면 로그인
 // 자체가 되지 않고, 설정·정답은 서버 함수가 관리자만 통과시킵니다.
 
-import { GAMES } from "../config.js?v=18";
+import { GAMES } from "../config.js?v=19";
 import {
   loadStats, configured, fmt, gameSettings, saveSettings, signInAdminEmail,
   setLockAnswer, setPayload, listRounds, roundDocId, resetSettingsCache
-} from "../shared/core.js?v=18";
+} from "../shared/core.js?v=19";
 
 const $ = (id) => document.getElementById(id);
 
@@ -62,8 +62,8 @@ function gameHead(id) {
 
 async function loadAll() {
   const games = $("games");
-  $("loading").hidden = false;
   const ids = Object.keys(LAYOUT);
+  $("loading").hidden = false;
 
   // 집계는 회차 수만큼 요청이 오가서 몇 초 걸립니다. 그동안 화면에 누를 것이
   // 하나도 없으면 페이지가 멈춘 것처럼 보이므로, 조작할 수 있는 부분을 먼저
@@ -73,56 +73,65 @@ async function loadAll() {
        <p class="note">집계 중…</p></section>`).join("");
   bindRoundButtons();
 
-  let merged, byGame;
+  // 전체를 감쌉니다. 그리는 도중에 터진 예외가 밖으로 새면 "데이터 집계 중"
+  // 문구가 영원히 남아 페이지가 멈춘 것처럼 보입니다. finally로 반드시
+  // 걷어내고, 이유는 화면에 띄웁니다.
   try {
-    merged = await gameSettings();
-    byGame = await listRounds();
+    const merged = await gameSettings();
+    const byGame = await listRounds();
+
+    // 진행 중인 회차는 아직 행이 없을 수 있으므로 목록에 채워 넣습니다.
+    for (const id of ids) {
+      const now = merged[id]?.round || 1;
+      byGame[id] = byGame[id] || [];
+      if (!byGame[id].includes(now)) byGame[id].unshift(now);
+      byGame[id].sort((a, b) => b - a);
+    }
+
+    const jobs = [];
+    for (const id of ids) {
+      for (const round of byGame[id]) jobs.push({ id, round });
+    }
+
+    const results = await Promise.allSettled(
+      jobs.map((j) => loadStats(roundDocId(j.id, j.round), LAYOUT[j.id].target))
+    );
+
+    const statsByGame = {};
+    jobs.forEach((j, i) => {
+      const res = results[i];
+      (statsByGame[j.id] ||= []).push({
+        round: j.round,
+        current: (merged[j.id]?.round || 1) === j.round,
+        ok: res.status === "fulfilled",
+        data: res.status === "fulfilled" ? res.value : null,
+        error: res.status === "rejected" ? res.reason : null
+      });
+      if (res.status === "rejected") {
+        console.error(`[stats:${j.id}-r${j.round}]`, res.reason);
+      }
+    });
+
+    // 한 게임을 그리다 터져도 나머지는 보여줍니다.
+    games.innerHTML = ids.map((id) => {
+      try {
+        return renderGameBlock(id, statsByGame[id] || []);
+      } catch (err) {
+        console.error(`[render:${id}]`, err);
+        return `<section class="game">${gameHead(id)}
+          <p class="load-error">이 게임을 그리지 못했습니다 — ${explain(err)}</p>
+        </section>`;
+      }
+    }).join("");
+    bindRoundButtons();
   } catch (err) {
-    // 집계를 못 읽어도 화면이 멈추면 안 됩니다. 이유를 보여주고,
-    // 새 라운드 버튼은 남겨서 계속 조작할 수 있게 합니다.
     console.error("[stats]", err);
     games.innerHTML = `<p class="load-error">${explain(err)}</p>` +
       ids.map((id) => `<section class="game">${gameHead(id)}</section>`).join("");
     bindRoundButtons();
+  } finally {
     $("loading").hidden = true;
-    return;
   }
-
-  // 진행 중인 회차는 아직 문서가 없을 수 있으므로 목록에 채워 넣습니다.
-  for (const id of ids) {
-    const now = merged[id]?.round || 1;
-    byGame[id] = byGame[id] || [];
-    if (!byGame[id].includes(now)) byGame[id].unshift(now);
-    byGame[id].sort((a, b) => b - a);
-  }
-
-  const jobs = [];
-  for (const id of ids) {
-    for (const round of byGame[id]) {
-      jobs.push({ id, round });
-    }
-  }
-
-  const results = await Promise.allSettled(
-    jobs.map((j) => loadStats(roundDocId(j.id, j.round), LAYOUT[j.id].target))
-  );
-
-  const statsByGame = {};
-  jobs.forEach((j, i) => {
-    const res = results[i];
-    (statsByGame[j.id] ||= []).push({
-      round: j.round,
-      current: (merged[j.id]?.round || 1) === j.round,
-      ok: res.status === "fulfilled",
-      data: res.status === "fulfilled" ? res.value : null,
-      error: res.status === "rejected" ? res.reason : null
-    });
-    if (res.status === "rejected") console.error(`[stats:${j.id}-r${j.round}]`, res.reason);
-  });
-
-  games.innerHTML = ids.map((id) => renderGameBlock(id, statsByGame[id] || [])).join("");
-  bindRoundButtons();
-  $("loading").hidden = true;
 }
 
 function bindRoundButtons() {
