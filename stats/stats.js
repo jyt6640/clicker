@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 행 수준 보안 정책이 합니다. 관리자 계정이 아니면 로그인
 // 자체가 되지 않고, 설정·정답은 서버 함수가 관리자만 통과시킵니다.
 
-import { GAMES } from "../config.js?v=19";
+import { GAMES } from "../config.js?v=20";
 import {
   loadStats, configured, fmt, gameSettings, saveSettings, signInAdminEmail,
   setLockAnswer, setPayload, listRounds, roundDocId, resetSettingsCache
-} from "../shared/core.js?v=19";
+} from "../shared/core.js?v=20";
 
 const $ = (id) => document.getElementById(id);
 
@@ -255,6 +255,34 @@ function renderRound(id, r) {
         </div>
       </section>
     </section>`;
+}
+
+// 화면의 입력칸 id → [게임, 항목]
+const FIELDS = {
+  "set-cylinder-target": ["cylinder", "target"],
+  "set-melt-target": ["melt", "target"],
+  "set-tug-winBy": ["tug", "winBy"],
+  "set-lock-hintEvery": ["lock", "hintEvery"],
+  "set-lock-cooldownMs": ["lock", "cooldownMs"],
+  "set-button-resetSeconds": ["button", "resetSeconds"],
+  "set-button-hideUnderSeconds": ["button", "hideUnderSeconds"],
+  "set-button-maxPresses": ["button", "maxPresses"]
+};
+
+/** 현재 설정값을 입력칸에 채웁니다. */
+async function fillSettings() {
+  try {
+    const merged = await gameSettings();
+    for (const [id, [game, key]] of Object.entries(FIELDS)) {
+      const v = merged[game]?.[key];
+      if (v !== undefined) $(id).value = v;
+    }
+  } catch (err) {
+    console.error("[fillSettings]", err);
+    const msg = $("save-msg");
+    msg.className = "save-msg err";
+    msg.textContent = `설정을 읽지 못했습니다 — ${explain(err)}`;
+  }
 }
 
 /** 설정을 저장합니다. 정답과 문구는 서버 함수를 통해서만 들어갑니다. */
