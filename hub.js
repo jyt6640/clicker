@@ -2,11 +2,11 @@
 //
 // 게임 화면과 달리 여기서는 아무것도 쓰지 않습니다. 읽기만 합니다.
 
-import { GAMES } from "./config.js?v=24";
+import { GAMES } from "./config.js?v=25";
 import {
   readTotals, readAllTimeTotal, gameSettings, roundDocId, configured, fmt,
   reduceMotion
-} from "./shared/core.js?v=24";
+} from "./shared/core.js?v=25";
 
 // 허브는 다섯 게임을 한꺼번에 보여주므로 실시간 구독을 쓰면 읽기량이
 // 게임 화면의 다섯 배가 됩니다. 실시간 메시지도 사용량이라, 여기서는
@@ -136,19 +136,21 @@ function watchCounts(settings) {
 
   }
 
-  async function readAll() {
-    // 보이지 않는 탭에서는 읽지 않습니다.
-    if (document.hidden) return;
+  // 첫 읽기는 탭이 보이든 말든 반드시 합니다. 링크를 배경 탭으로 열어두는
+  // 경우가 흔하고(슬랙에서 가운데 클릭), 그때 화면에 0이 박혀 있으면
+  // 이벤트가 죽은 것처럼 보입니다. 이후 주기적 갱신만 건너뜁니다.
+  async function readAll(force = false) {
+    if (!force && document.hidden) return;
     const results = await Promise.allSettled([...CARDS.map(readOne), renderGrand()]);
     results.forEach((r, i) => {
       if (r.status === "rejected") console.error(`[hub:${CARDS[i]?.id ?? "total"}]`, r.reason);
     });
   }
 
-  readAll();
-  setInterval(readAll, POLL_MS);
+  readAll(true);
+  setInterval(() => readAll(), POLL_MS);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) readAll();
+    if (!document.hidden) readAll(true);
   });
 }
 
