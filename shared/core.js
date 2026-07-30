@@ -11,7 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 import {
   supabaseConfig, GA_MEASUREMENT_ID, FLUSH_INTERVAL_MS, GAMES
-} from "../config.js?v=22";
+} from "../config.js?v=23";
 
 export const configured =
   Boolean(supabaseConfig.url && supabaseConfig.anonKey);

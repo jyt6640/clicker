@@ -194,6 +194,12 @@ body {
   padding: 0;
 }
 .badge {
+  /* 장식용 글자입니다. 클릭을 받을 이유가 없으므로 통과시킵니다.
+     마크업이 어떤 이유로 깨져 이 요소가 커지더라도 아래 버튼을 가리지
+     못하게 하려는 방어입니다. inline-block으로 고정해 여러 줄에 걸쳐
+     늘어나는 것도 막습니다. */
+  pointer-events: none;
+  display: inline-block;
   margin-left: 0.6rem;
   font-size: 0.7rem;
   letter-spacing: 0.1em;

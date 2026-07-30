@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 행 수준 보안 정책이 합니다. 관리자 계정이 아니면 로그인
 // 자체가 되지 않고, 설정·정답은 서버 함수가 관리자만 통과시킵니다.
 
-import { GAMES } from "../config.js?v=22";
+import { GAMES } from "../config.js?v=23";
 import {
   loadStats, configured, fmt, gameSettings, saveSettings, signInAdminEmail,
   setLockAnswer, setPayload, listRounds, roundDocId, resetSettingsCache
-} from "../shared/core.js?v=22";
+} from "../shared/core.js?v=23";
 
 const $ = (id) => document.getElementById(id);
 
