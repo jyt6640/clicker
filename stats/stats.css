@@ -70,6 +70,10 @@ body {
 .build { color: #333; font-size: 0.7rem; letter-spacing: 0.1em; margin-left: 0.5rem; }
 
 .ghost {
+  /* 폭이 좁아지면 flex가 버튼을 눌러 글자가 세로로 접힙니다.
+     40x115 짜리 조각이 되어 누르기 어려워지므로 줄이지 않습니다. */
+  flex-shrink: 0;
+  white-space: nowrap;
   background: none;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -163,7 +167,15 @@ body {
   margin-bottom: 1rem;
 }
 .game-head h2 { font-size: 0.95rem; letter-spacing: 0.14em; }
-.game-head .url { margin: 0; flex: 1; }
+/* 주소는 남는 공간만 쓰고, 좁으면 줄임표로 접힙니다. */
+.game-head .url {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* 회차 하나 */
 .round {

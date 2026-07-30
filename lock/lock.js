@@ -5,8 +5,8 @@
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
   checkAnswer, getHint
-} from "../shared/core.js?v=21";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=21";
+} from "../shared/core.js?v=22";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=22";
 
 const GAME_ID = "lock";
 // 관리자 설정을 읽어 덮어씁니다.
