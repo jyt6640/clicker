@@ -4,11 +4,11 @@
 // 이메일 계정 로그인과 행 수준 보안 정책이 합니다. 관리자 계정이 아니면 로그인
 // 자체가 되지 않고, 설정·정답은 서버 함수가 관리자만 통과시킵니다.
 
-import { GAMES } from "../config.js?v=16";
+import { GAMES } from "../config.js?v=17";
 import {
   loadStats, configured, fmt, gameSettings, saveSettings, signInAdminEmail,
   setLockAnswer, setPayload, listRounds, roundDocId, resetSettingsCache
-} from "../shared/core.js?v=16";
+} from "../shared/core.js?v=17";
 
 const $ = (id) => document.getElementById(id);
 
@@ -246,6 +246,58 @@ function renderRound(id, r) {
         </div>
       </section>
     </section>`;
+}
+
+/** 설정을 저장합니다. 정답과 문구는 서버 함수를 통해서만 들어갑니다. */
+async function onSave() {
+  const msg = $("save-msg");
+  msg.className = "save-msg";
+  msg.textContent = "저장 중…";
+
+  const merged = await gameSettings();
+  const payload = {};
+  for (const [id, [game, key]] of Object.entries(FIELDS)) {
+    const v = Number($(id).value);
+    if (!Number.isFinite(v)) continue;
+    payload[game] = payload[game] || { ...(merged[game] || {}) };
+    payload[game][key] = v;
+  }
+
+  const answer = $("set-lock-answer").value.trim();
+  if (answer && !/^\d+$/.test(answer)) {
+    msg.className = "save-msg err";
+    msg.textContent = "자물쇠 정답은 숫자만 입력하세요.";
+    return;
+  }
+  const meltText = $("set-melt-payload").value.trim();
+
+  try {
+    if (answer) {
+      payload.lock = payload.lock || { ...merged.lock };
+      payload.lock.digits = answer.length;
+    }
+    await saveSettings(payload);
+
+    // 평문 정답은 브라우저를 떠나는 순간부터 서버 안에만 존재합니다.
+    if (answer) {
+      await setLockAnswer(
+        roundDocId("lock", payload.lock?.round || merged.lock.round || 1), answer);
+    }
+    if (meltText) {
+      await setPayload(
+        roundDocId("melt", payload.melt?.round || merged.melt.round || 1), meltText);
+    }
+
+    resetSettingsCache();
+    msg.className = "save-msg ok";
+    msg.textContent = "저장했습니다. 참여자는 새로고침하면 반영됩니다.";
+    $("set-lock-answer").value = "";
+    $("set-melt-payload").value = "";
+  } catch (err) {
+    console.error("[save]", err);
+    msg.className = "save-msg err";
+    msg.textContent = `저장 실패 — ${explain(err)}`;
+  }
 }
 
 /** 지우지 않고 회차만 올립니다. 이전 회차 기록은 그대로 남습니다. */
