@@ -11,7 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 import {
   supabaseConfig, GA_MEASUREMENT_ID, FLUSH_INTERVAL_MS, GAMES
-} from "../config.js?v=17";
+} from "../config.js?v=18";
 
 export const configured =
   Boolean(supabaseConfig.url && supabaseConfig.anonKey);
@@ -275,11 +275,14 @@ export async function createSession(opts) {
     if (gameRow.status === "completed") finish(false);
   }
 
-  await readCounters();
-  await readGame();
-
+  // 첫 읽기와 구독은 이 함수가 반환된 뒤에 시작합니다.
+  //
+  // 여기서 곧바로 읽으면 onTotal·onBuckets·onComplete가 호출자가 세션
+  // 객체를 손에 넣기 전에 불립니다. 콜백 안에서 session을 쓰는 순간
+  // ReferenceError가 나고, 처리되지 않은 프로미스 거부로 삼켜져 화면이
+  // "연결 중"에서 멈춥니다. 실제로 줄다리기가 그렇게 멈춰 있었습니다.
   // 실시간 구독 — 남이 누른 것도 즉시 반영됩니다.
-  client
+  const subscribe = () => client
     .channel(`game:${roundId}`)
     .on("postgres_changes",
       { event: "*", schema: "public", table: "counters", filter: `game_id=eq.${roundId}` },
@@ -291,6 +294,12 @@ export async function createSession(opts) {
       liveReady = status === "SUBSCRIBED";
       pushStatus();
     });
+
+  function begin() {
+    readCounters();
+    readGame();
+    subscribe();
+  }
 
   function finish(iWon) {
     completed = true;
@@ -336,6 +345,8 @@ export async function createSession(opts) {
   window.addEventListener("online", () => { online = true; pushStatus(); });
   window.addEventListener("offline", () => { online = false; pushStatus(); });
   pushStatus();
+
+  setTimeout(begin, 0);
 
   return {
     uid,

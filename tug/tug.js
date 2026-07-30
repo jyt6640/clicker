@@ -4,8 +4,8 @@
 
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings
-} from "../shared/core.js?v=17";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=17";
+} from "../shared/core.js?v=18";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=18";
 
 const GAME_ID = "tug";
 let winBy = 3000;                 // 관리자 설정을 읽어 덮어씁니다.
@@ -56,7 +56,8 @@ async function main() {
   elStage.classList.add(`team-${mine}`);
   elCount.classList.add(`team-${mine}`);
 
-  const session = await createSession({
+  let session;
+  session = await createSession({
     gameId: GAME_ID,
     target: null,                 // 승부는 격차로 판정하므로 상한이 없습니다.
     bucket: myTeam,
@@ -67,7 +68,7 @@ async function main() {
       renderTeams();
 
       const diff = left - right;
-      if (Math.abs(diff) >= winBy && !session.completed) {
+      if (session && Math.abs(diff) >= winBy && !session.completed) {
         const winner = diff > 0 ? LEFT : RIGHT;
         session.finishGame(winner === myTeam, winner);
       }

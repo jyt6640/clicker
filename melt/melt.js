@@ -5,8 +5,8 @@
 import {
   createSession, initAnalytics, configured, fmt, reduceMotion, gameSettings,
   getPayload
-} from "../shared/core.js?v=17";
-import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=17";
+} from "../shared/core.js?v=18";
+import { statusHandler, showDone, showSetupNeeded, popper } from "../shared/ui.js?v=18";
 
 const GAME_ID = "melt";
 let target = 50000;               // 관리자 설정을 읽어 덮어씁니다.
@@ -61,7 +61,8 @@ async function main() {
   target = (await gameSettings())[GAME_ID].target;
   render(0);
 
-  const session = await createSession({
+  let session;
+  session = await createSession({
     gameId: GAME_ID,
     target,
     onTotal: render,
